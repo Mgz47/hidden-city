@@ -334,6 +334,7 @@ input.city:disabled{opacity:.5;}
 .dlist .row span:first-child{color:var(--faint);font-family:var(--mono);font-size:12px;}
 .dlist .row span:last-child{font-family:var(--mono);font-size:13px;}
 .roomcode{font-family:var(--mono);font-weight:700;font-size:clamp(40px,12vw,64px);letter-spacing:.25em;text-align:center;color:var(--accent);padding:10px 0 6px;user-select:all;}
+.series{font-size:14px!important;color:var(--ink)!important;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;}
 .waiting{display:flex;align-items:center;gap:10px;font-size:13px;}
 .pulse{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pulse 1.2s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:.25;transform:scale(.8);}50%{opacity:1;transform:scale(1);}}
@@ -1427,7 +1428,7 @@ const $=id=>document.getElementById(id);
 const gInput=$("guess");
 attachSuggest(gInput,$("gsugg"),(c,enter)=>{if(enter)doGuess();});
 $("guessBtn").addEventListener("click",doGuess);
-$("passBtn").addEventListener("click",()=>{if(S.phase==="over"){resetBoard();menuTab="play";startScreen();return;}});
+$("passBtn").addEventListener("click",()=>{if(S.phase==="over"){if(S.mode==="daily")return Daily.results(false);showEnd();}});
 $("swnow").addEventListener("click",()=>switchTurn());
 let swTimer=null;
 const pColor=i=>i===0?"var(--p1)":"var(--p2)";
@@ -1770,7 +1771,7 @@ function hideScreen(i){
     if(!filt(c)){$("hmsg").textContent=`That place isn't allowed on ${DIFFS[S.settings.diff].name}. ${DIFFS[S.settings.diff].desc}.`;$("hmsg").className="msg err";return;}
     p.secret=c;
     if(i===0)handoffScreen(`Hide complete`,`Hand the device to ${esc(S.players[1].name)}.`,`I'm ${esc(S.players[1].name)}`,()=>hideScreen(1));
-    else{S.turn=0;handoffScreen(`Both cities are hidden`,`${esc(S.players[0].name)} guesses first, then you take turns: one guess each.`,`Start the game`,beginPlay);}
+    else{S.turn=S.first||0;handoffScreen(`Both cities are hidden`,`${esc(S.players[S.first||0].name)} guesses first, then you take turns: one guess each.`,`Start the game`,beginPlay);}
   };
   $("hideOk").addEventListener("click",()=>confirm());
   $("hideRand").addEventListener("click",()=>{const pool=poolOf(S.settings.diff);confirm(pool[Math.floor(Math.random()*pool.length)]);});
@@ -1779,7 +1780,7 @@ function handoffScreen(eyebrow,text,btn,fn){
   show(`<div class="eyebrow">${eyebrow}</div><h2>${text}</h2><button class="btn wide" id="hand">${btn}</button>`);
   $("hand").addEventListener("click",fn);
 }
-function beginPlay(){S.turn=0;beginTurn(true);}
+function beginPlay(){S.turn=S.first||0;beginTurn(true);}
 function beginTurn(announce){
   hide();
   const p=seeker();p.peek=false;
@@ -1806,7 +1807,8 @@ async function endGame(){
   for(const s of after){const old=before.get(s.key)||new Set();for(const id of s.ach)if(!old.has(id))fresh.push({who:s.name,a:ACH.find(x=>x.id===id)});}
   if(S.mode!=="online"||S.me===0)store.add(rec);
   const freshHTML=fresh.length?`<div class="newach"><h3>New achievements</h3>${fresh.map(f=>`<div class="ach got"><span class="ai">${f.a.icon}</span><div><strong>${f.a.name}</strong><small>${esc(f.who)} · ${f.a.desc}</small></div></div>`).join("")}</div>`:"";
-  const buttons=`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="again">Play again</button><button class="btn ghost" id="board">Leaderboard</button><button class="btn ghost" id="look">Look at the map</button></div>`;
+  const isOnline=S.mode==="online";
+  const buttons=`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="again">Play again</button>${isOnline?`<button class="btn ghost" id="leaveRoom">Leave room</button>`:`<button class="btn ghost" id="menu">Menu</button>`}<button class="btn ghost" id="look">Look at the map</button></div>`;
   let html;
   if(S.mode==="solo"){
     drawSecrets([b.secret]);flyTo(b.secret,3);
@@ -1827,16 +1829,36 @@ async function endGame(){
     else title=`${esc(b.name)} wins!`;
     const sub=S.gaveUp!=null?`${esc(S.players[S.gaveUp].name)} gave up after ${S.players[S.gaveUp].guesses.length} guesses.`:a.found&&b.found?`Both cities were found in ${a.guesses.length} guesses.`:(!a.found&&!b.found)?"Both players ran out of guesses.":(S.lastChance?`${esc(S.players[1-S.finder].name)} missed the last chance.`:"");
     const card2=(p,o)=>`<div><small>${esc(p.name)} hid in</small><strong>${p.secret.name}</strong><br><em>${o.found?`found by ${esc(o.name)} in ${o.guesses.length}`:`not found after ${o.guesses.length} guesses`}</em></div>`;
-    html=`<div class="eyebrow">Game over</div><h2>${title}</h2>${sub?`<p>${sub}</p>`:""}
+    html=`<div class="eyebrow">Game over</div><h2>${title}</h2>${sub?`<p>${sub}</p>`:""}${isOnline?Online.scoreLine():S.mode==="duo"?localScoreLine():""}
       <div class="reveal">${card2(a,b)}${card2(b,a)}</div>${freshHTML}${buttons}`;
   }
-  setTimeout(()=>{
-    show(html);
-    const leave=()=>{if(S.mode==="online")Online.leave();};
-    $("again").addEventListener("click",()=>{leave();resetBoard();menuTab="play";startScreen();});
-    $("board").addEventListener("click",()=>{leave();resetBoard();menuTab="board";startScreen();});
-    $("look").addEventListener("click",()=>{hide();$("passBtn").hidden=false;$("passBtn").textContent="Back to menu";document.querySelector(".guessrow").hidden=true;});
-  },soloLike()?900:600);
+  lastEnd=html;
+  setTimeout(showEnd,soloLike()?900:600);
+}
+let lastEnd=null;
+function showEnd(){
+  if(!lastEnd||!S||S.phase!=="over")return;
+  show(lastEnd);
+  $("again").addEventListener("click",playAgain);
+  if($("menu"))$("menu").addEventListener("click",()=>{resetBoard();menuTab="play";startScreen();});
+  if($("leaveRoom"))$("leaveRoom").addEventListener("click",()=>Online.leaveRoom());
+  $("look").addEventListener("click",()=>{hide();$("passBtn").hidden=false;$("passBtn").textContent="Back to results";document.querySelector(".guessrow").hidden=true;});
+}
+/* Play again: same players and settings; whoever went first last time goes second now */
+let localSeries=null;
+function localScoreLine(){
+  const [a,b]=S.players;const key=a.name+"|"+b.name;
+  if(!localSeries||localSeries.key!==key||localSeries.gid!==S.gid){
+    if(!localSeries||localSeries.key!==key)localSeries={key,w:[0,0],d:0,rounds:0};
+    localSeries.gid=S.gid;localSeries.rounds++;
+    if(S.gaveUp!=null)localSeries.w[1-S.gaveUp]++;else if(a.found===b.found)localSeries.d++;else localSeries.w[a.found?0:1]++;}
+  const L=localSeries;if(L.rounds<2)return "";
+  return `<p class="series">After ${L.rounds} rounds: <strong>${esc(a.name)} ${L.w[0]}</strong> – <strong>${L.w[1]} ${esc(b.name)}</strong>${L.d?` · ${L.d} draw${L.d>1?"s":""}`:""}</p>`;}
+function playAgain(){
+  if(S.mode==="online")return Online.again();
+  const set={...S.settings};
+  if(S.mode==="duo"){const names=S.players.map(p=>p.name),first=1-(S.first||0);resetBoard();S=newState("duo",names);S.settings=set;S.first=first;hideScreen(0);return;}
+  const n=S.players[0].name;resetBoard();S=newState("solo",[n,"Computer"]);S.settings=set;const pool=poolOf(set.diff);S.players[1].secret=pool[Math.floor(Math.random()*pool.length)];beginPlay();
 }
 /* ---------- Shared storage access ---------- */
 async function getDB(){try{if(window.claude&&window.claude.use)return await window.claude.use("db");return window.HC_DB||null;}catch(e){return null;}}
@@ -1926,13 +1948,27 @@ const Online=(()=>{
     const p=d.p||{};const me=p["0"]&&p["0"].cid===O.cid?0:(p["1"]&&p["1"].cid===O.cid?1:null);
     if(me===null){clearRoom();return err("You're not one of the players in this room.");}
     O.me=me;const other=p[1-me];
+    if(d.status!=="over"){O.endShown=false;O.toldAgain=false;O.toldLeft=false;O.resetting=false;}
+    if(d.status!=="hiding")O.starting=false;
+    if(d.status==="over"){
+      const mine=p[me]||{},oth=other||{};
+      if(oth.left){
+        if(O.screen==="again"||O.screen==="left"){if(O.screen!=="left"){O.screen="left";show(`<div class="eyebrow">Room ${d.code}</div><h2>${esc(oth.name||"Your friend")} left the room</h2><p>Start a new room from the menu to play again.</p><button class="btn wide" id="oback3">Back to menu</button>`);$("oback3").addEventListener("click",()=>{O.leave();clearRoom();resetBoard();menuTab="play";startScreen();});}return;}
+        if(O.endShown&&!O.toldLeft){O.toldLeft=true;banner(`${oth.name} left the room`,"",pColor(1-me));}
+      }
+      if(mine.again&&oth.again&&!oth.left){
+        if(me===0&&!O.resetting){O.resetting=true;setTimeout(()=>rematch(d),0);}
+        if(O.screen!=="again")againWait(d);return;}
+      if(mine.again){if(O.screen!=="again")againWait(d);return;}
+      if(oth.again&&O.endShown&&!O.toldAgain){O.toldAgain=true;banner(`${oth.name} wants a rematch`,"Tap Play again",pColor(1-me));}
+    }
     if(d.status==="lobby"){if(O.screen!=="lobby")lobby(d);return;}
     if(d.status==="hiding"){
       const mine=p[me].sec!=null,theirs=other&&other.sec!=null;
       if(!mine){if(O.screen!=="hide")hideOnline(d);return;}
       if(theirs){
         // start on the next tick: some databases report our own write back instantly, mid-render
-        if(me===0&&!O.starting){O.starting=true;const ref=O.ref;setTimeout(()=>{if(ref&&O.ref===ref&&O.doc&&O.doc.status==="hiding")ref.update({status:"playing",turn:0,turnAt:Date.now()}).catch(()=>{O.starting=false;});},0);}
+        if(me===0&&!O.starting){O.starting=true;const ref=O.ref;setTimeout(()=>{if(ref&&O.ref===ref&&O.doc&&O.doc.status==="hiding")ref.update({status:"playing",turn:O.doc.first||0,turnAt:Date.now()}).catch(()=>{O.starting=false;});},0);}
         if(O.screen!=="starting"){O.screen="starting";show(`<div class="eyebrow">Room ${d.code}</div><h2>Both cities are hidden</h2><p>Starting the game…</p>`);}
         return;}
       if(O.screen!=="waithide"){O.screen="waithide";const c=dec(p[me].sec,d.code);
@@ -1959,6 +1995,7 @@ const Online=(()=>{
     O.screen="hide";const me=O.me,other=d.p[1-me],diff=(d.set&&d.set.diff)||"normal";
     show(`<div class="eyebrow">Room ${d.code} · ${esc(other.name)} is here</div><h2>Pick your secret city</h2>
       <p>${esc(other.name)} will try to find it. ${DIFFS[diff].name}: ${DIFFS[diff].desc.toLowerCase()}.</p>
+      ${(d.round||1)>1?`<p class="series">Round ${d.round} · ${(d.first||0)===me?"you guess first":esc(other.name)+" guesses first"}</p>`:""}
       <p class="small">${settingsSummary(d.set)}</p>
       <div class="field"><input class="city" id="hideIn" placeholder="Type your city…" autocomplete="off" spellcheck="false"><div class="sugg" id="hsugg" hidden></div></div>
       <div class="msg" id="hmsg"></div>
@@ -1974,6 +2011,25 @@ const Online=(()=>{
     $("hideRand").addEventListener("click",()=>{const pool=poolOf(diff);ok(pool[Math.floor(Math.random()*pool.length)]);});
     setTimeout(()=>inp.focus(),50);
   }
+  function resultKey(){return S.gaveUp!=null?String(1-S.gaveUp):(S.players[0].found===S.players[1].found?"d":(S.players[0].found?"0":"1"));}
+  O.scoreLine=()=>{const d=O.doc;if(!d)return "";const sc=Object.assign({},d.score||{}),k=resultKey();sc[k]=(sc[k]||0)+1;const n=d.round||1;
+    return `<p class="series">Room ${d.code}${n>1?` · round ${n}`:""}: <strong>${esc(S.players[0].name)} ${sc["0"]||0}</strong> – <strong>${sc["1"]||0} ${esc(S.players[1].name)}</strong>${sc.d?` · ${sc.d} draw${sc.d>1?"s":""}`:""}</p>`;};
+  function againWait(d){
+    O.screen="again";const oth=d.p[1-O.me]||{},first=1-(d.first||0);
+    show(`<div class="eyebrow">Room ${d.code} · round ${(d.round||1)+1}</div><h2>Waiting for ${esc(oth.name||"your friend")}</h2>
+      <p>${esc(oth.name||"Your friend")} needs to tap Play again too. ${first===O.me?"You'll guess first this round.":esc(oth.name||"They")+" will guess first this round."}</p>
+      <p class="waiting"><span class="pulse"></span>Waiting…</p><button class="btn ghost wide" id="oleave2">Leave room</button>`);
+    $("oleave2").addEventListener("click",()=>O.leaveRoom());
+  }
+  async function rematch(d){
+    if(!O.ref||!O.doc||O.doc.status!=="over")return;
+    const k=resultKey(),sc=d.score||{},first=1-(d.first||0);
+    try{await O.ref.update({status:"hiding",round:(d.round||1)+1,first,turn:first,turnAt:0,lastChance:false,finder:null,gaveUp:null,score:{[k]:(sc[k]||0)+1},
+      p:{"0":{g:null,miss:0,sec:null,again:null},"1":{g:null,miss:0,sec:null,again:null}}});}catch(e){O.resetting=false;}
+  }
+  O.again=async()=>{const d=O.doc;if(!O.ref||!d)return;saveRoom();againWait(d);
+    try{await O.ref.update({p:{[O.me]:{again:true}}});}catch(e){err("Couldn't reach the room. Check your connection.");}};
+  O.leaveRoom=async()=>{const r=O.ref,me=O.me;O.leave();clearRoom();try{if(r)await r.update({p:{[me]:{left:true,again:null}}});}catch(e){}resetBoard();menuTab="play";startScreen();};
   function rebuild(d){
     const players=[0,1].map(i=>{const x=d.p[i]||{};return {name:x.name||"…",secret:dec(x.sec,d.code),guesses:[],revealed:[[],[],[],[]],found:false,peek:false,missed:x.miss||0,_ids:x.g||[],_nh:null};});
     players.forEach((pl,i)=>{const tgt=players[1-i].secret;if(!tgt)return;for(const id of pl._ids){const c=CITIES[id];if(c)pl._nh=applyGuess(pl,c,tgt,(d.set&&d.set.diff)||"normal").nh;}});
@@ -1981,7 +2037,7 @@ const Online=(()=>{
       settings:d.set||{diff:"normal",timer:0,limit:0},turnAt:d.turnAt,players};
   }
   function play(d){
-    const prev=S&&S.mode==="online"&&S.code===d.code?S:null;
+    const prev=O.screen==="play"&&S&&S.mode==="online"&&S.code===d.code?S:null;
     const me=O.me,prevMy=prev?prev.players[me].guesses.length:0,prevOpp=prev?prev.players[1-me].guesses.length:0,prevTurn=prev?prev.turn:null;
     S=rebuild(d);
     const p=S.players[me],q=S.players[1-me];
