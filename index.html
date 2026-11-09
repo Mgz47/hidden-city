@@ -1,7 +1,18 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Hidden City: a hide-and-seek geography game. Hide in a city, then hunt for your opponent's with hot and cold clues.">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<meta name="theme-color" content="#0c1a22">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hidden City">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{background:#0c1a22}body{margin:0;font:14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
@@ -48,6 +59,9 @@
     return api;}
   window.HC_DB={doc:docRef,collection:function(p){return colRef(p,0);}};
 })();
+
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.HC_INSTALL=e;window.dispatchEvent(new Event("hc-install"));});
+window.addEventListener("appinstalled",function(){window.HC_INSTALL=null;window.dispatchEvent(new Event("hc-install"));});
 </script>
 </head><body>
 <title>Hidden City</title>
@@ -124,6 +138,20 @@
 .themes button{background:none;border:none;color:var(--muted);border-radius:7px;padding:6px 10px;font-size:12px;font-weight:600;}
 .themes button[aria-pressed="true"]{background:var(--panel-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);}
 [hidden]{display:none!important;}
+html,body{overscroll-behavior:none;}
+body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;}
+.app,.overlay{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+input,select,textarea,.sharebox pre,.roomcode{-webkit-user-select:text;user-select:text;}
+button,select,.mode{touch-action:manipulation;}
+#map,#globe{-webkit-user-select:none;user-select:none;}
+.card.enter{animation:cardIn .32s cubic-bezier(.2,.8,.2,1);}
+.overlay.in{animation:ovIn .22s ease-out;}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.985);}to{opacity:1;transform:none;}}
+@keyframes ovIn{from{opacity:0;}to{opacity:1;}}
+.installtip{display:flex;align-items:center;gap:10px;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 8%,var(--panel));border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);}
+.installtip span{flex:1;min-width:0;line-height:1.4;}
+.installtip .btn{padding:8px 14px;font-size:14px;}
+.iconbtn{background:none;border:none;color:var(--muted);font-size:20px;line-height:1;padding:4px 6px;}
 html,body{height:100%;}
 body{background:var(--ocean);color:var(--ink);font-family:var(--body);font-size:15px;overflow:hidden;}
 *{box-sizing:border-box;}
@@ -375,6 +403,8 @@ table.lb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
   .sheethandle{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;padding:8px 0 2px;}
   .sheethandle::before{content:"";width:36px;height:4px;border-radius:999px;background:var(--line);position:absolute;top:6px;left:50%;transform:translateX(-50%);}
   .sheethandle span{margin-top:8px;}
+  .sheethandle,.phead{touch-action:none;}
+  .panel{transition:max-height .25s ease,transform .2s ease;}
   .phead{padding:4px 14px 8px;align-items:center;}
   .brand{display:none;}
   .turn{font-size:17px;margin-top:0;}
@@ -1183,6 +1213,7 @@ const inPool=(c,diff)=>diff==="easy"?CAPITALS.has(c.name):diff==="normal"?NORMAL
 const poolOf=diff=>CITIES.filter(c=>inPool(c,diff));
 const exhausted=p=>!!(S&&S.settings&&S.settings.limit&&!p.found&&p.guesses.length>=S.settings.limit);
 function settingsSummary(st){st=st||SETTINGS;const a=[DIFFS[st.diff||"normal"].name];if(st.timer)a.push(`${st.timer} s per guess`);if(st.limit)a.push(`${st.limit} guesses max`);return a.join(" · ");}
+function buzz(d){try{if(!navigator.vibrate)return;const t=bandOf(d).tier;navigator.vibrate(d<1?[70,50,70,50,160]:t===3?[40,30,40]:t===2?28:t===1?14:8);}catch(e){}}
 function applyGuess(p,c,tgt,diff){diff=diff||(S&&S.settings&&S.settings.diff)||"normal";const d=c.id===tgt.id?0:dist(c,tgt);const band=bandOf(d);p.guesses.push({city:c,d,band,brg:bearing(c,tgt)});
   const all=hintsFor(tgt,diff);let nh=null;
   if(diff==="easy"){const at=EASY_AT.indexOf(p.guesses.length);if(at>=0&&d!==0){p.revealed[at].push(0);nh=[at,0];}if(d===0)p.found=true;return {d,nh,all};}
@@ -1502,6 +1533,7 @@ function doGuess(){
   msg.textContent=nh?`New clue: ${all[nh[0]][nh[1]].k}`:"No new clues at this range.";msg.className="msg";
   gInput.value="";
   drawGuesses(p);renderPanel(nh);
+  buzz(d);
   if(d===0)return onFound();
   flyTo(c,Math.max(3,Math.min(K*1.6,5)));
   if(soloLike()){if(exhausted(p))return endGame();gInput.focus();return;}
@@ -1631,7 +1663,7 @@ function buildRecord(){
 
 /* ---------- Overlay screens ---------- */
 const overlay=$("overlay"),card=$("card");
-const show=html=>{card.innerHTML=html;overlay.hidden=false;};
+const show=html=>{card.innerHTML=html;const was=overlay.hidden;overlay.hidden=false;if(was)overlay.classList.remove("in"),void overlay.offsetWidth,overlay.classList.add("in");card.classList.remove("enter");void card.offsetWidth;card.classList.add("enter");};
 const hide=()=>{overlay.hidden=true;};
 let pendingMode="duo",menuTab="play";
 const names={n1:"Player 1",n2:"Player 2",solo:"Player 1"};
@@ -1659,7 +1691,7 @@ function startScreen(){
       <p class="small">Each player uses their own phone. The room's creator picks the settings. ${ON_SITE?`Send your friend the link to this game so they can join.`:`Your friend needs edit access to this game, shared from the Share menu at the top.`}</p>`;
     else action=`${nameField}<div class="dailybox"><div><strong>${streak}</strong><small>day streak</small></div><p>${dh?(dh.found?`You found today's city in ${dh.guesses} guess${dh.guesses===1?"":"es"}.`:"You didn't find today's city.")+" A new one appears at midnight UTC.":"Everyone gets the same hidden city today. Find it in as few guesses as you can."}</p></div>
       <button class="btn wide" id="dgo">${dh?"See today's results":"Play today's city"}</button>`;
-    body=`<p>Hide in a city, then hunt for your opponent's. Every guess shows how hot or cold you are, and the clues get sharper the closer you get.</p>
+    body=`${installTip()}<p>Hide in a city, then hunt for your opponent's. Every guess shows how hot or cold you are, and the clues get sharper the closer you get.</p>
   <div class="ramp">${BANDS.slice().reverse().map(b=>`<i style="background:${b.color}"></i>`).join("")}</div>
   <div class="modes">
     <button class="mode" data-m="duo" aria-pressed="${m==="duo"}"><strong>Same device</strong><span>Two players, pass the phone</span></button>
@@ -1708,6 +1740,8 @@ function startScreen(){
   if($("ocode"))$("ocode").addEventListener("keydown",e=>{if(e.key==="Enter")Online.join($("ocode").value,myName());});
   if($("orejoin"))$("orejoin").addEventListener("click",()=>Online.rejoin(Online.saved()));
   if($("dgo"))$("dgo").addEventListener("click",()=>Daily.start(myName()));
+  if($("installBtn"))$("installBtn").addEventListener("click",async()=>{const ev=window.HC_INSTALL;window.HC_INSTALL=null;try{ev.prompt();await ev.userChoice;}catch(e){}startScreen.save();startScreen();});
+  if($("installX"))$("installX").addEventListener("click",()=>{try{localStorage.setItem("hc-install-tip","1");}catch(e){}startScreen.save();startScreen();});
 }
 startScreen.save=()=>{const v=id=>{const e=card.querySelector("#"+id);return e?e.value:null;};
   if(v("n1")!=null)names.n1=v("n1");if(v("n2")!=null)names.n2=v("n2");if(v("ns")!=null)names.solo=v("ns");
@@ -1807,6 +1841,16 @@ async function endGame(){
 /* ---------- Shared storage access ---------- */
 async function getDB(){try{if(window.claude&&window.claude.use)return await window.claude.use("db");return window.HC_DB||null;}catch(e){return null;}}
 const ON_SITE=!window.claude;
+const canShare=()=>ON_SITE&&!!navigator.share;
+const isStandalone=()=>window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+function installTip(){
+  if(!ON_SITE||isStandalone())return "";
+  if(window.HC_INSTALL)return `<div class="installtip"><span>Install Hidden City as an app: full screen, its own icon, and it works offline.</span><button class="btn" id="installBtn">Install</button></div>`;
+  let dismissed=false;try{dismissed=localStorage.getItem("hc-install-tip")==="1";}catch(e){}
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  if(ios&&!dismissed)return `<div class="installtip"><span>Play it like an app: tap <b>Share</b>, then <b>Add to Home Screen</b>.</span><button class="iconbtn" id="installX" aria-label="Hide this tip">×</button></div>`;
+  return "";}
+window.addEventListener("hc-install",()=>{if(!overlay.hidden&&menuTab==="play"&&card.querySelector(".tabs")){startScreen.save();startScreen();}});
 const SITE_LINK=location.origin+location.pathname;
 function deviceId(){let d=null;try{d=localStorage.getItem("hidden-city-did");}catch(e){}if(!d){d="d"+Math.random().toString(36).slice(2,10);try{localStorage.setItem("hidden-city-did",d);}catch(e){}}return d;}
 
@@ -1905,10 +1949,11 @@ const Online=(()=>{
       <div class="roomcode" id="rcode">${d.code}</div>
       <p>They open Hidden City on their phone, pick <strong>Online</strong> and type the code. ${ON_SITE?`If they don't have the game yet, send them this link: <strong>${esc(SITE_LINK)}</strong>`:`They need edit access to this game, shared from the Share menu at the top.`}</p>
       <p class="small">${settingsSummary(d.set)}</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="rcopy">Copy code</button><button class="btn ghost" id="rcancel">Cancel</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${canShare()?`<button class="btn" id="rshare">Share invite</button>`:""}<button class="btn ${canShare()?"ghost":""}" id="rcopy">Copy code</button><button class="btn ghost" id="rcancel">Cancel</button></div>
       <p class="waiting"><span class="pulse"></span>Waiting for your friend to join…</p>`);
     $("rcopy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(d.code);$("rcopy").textContent="Copied";}catch(e){const r=document.createRange();r.selectNodeContents($("rcode"));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);$("rcopy").textContent="Selected";}});
     $("rcancel").addEventListener("click",O.cancel);
+    if($("rshare"))$("rshare").addEventListener("click",()=>{navigator.share({title:"Hidden City",text:`Join my Hidden City game! Open the game, pick Online and enter room code ${d.code}.`,url:SITE_LINK}).catch(()=>{});});
   }
   function hideOnline(d){
     O.screen="hide";const me=O.me,other=d.p[1-me],diff=(d.set&&d.set.diff)||"normal";
@@ -1942,6 +1987,7 @@ const Online=(()=>{
     const p=S.players[me],q=S.players[1-me];
     if(O.screen!=="play"){O.screen="play";hide();resetBoard();$("passBtn").hidden=true;$("switching").hidden=true;svg.transition().duration(450).call(zoom.transform,d3.zoomIdentity);}
     const mineNew=p.guesses.length>prevMy&&!!prev,oppNew=q.guesses.length>prevOpp&&!!prev;
+    if(mineNew)buzz(p.guesses[p.guesses.length-1].d);
     drawGuesses(p);renderPanel(mineNew?p._nh:null);
     const myTurn=S.phase!=="over"&&S.turn===me;
     setTurnLocked(!myTurn);
@@ -2019,11 +2065,12 @@ const Daily={
     show(`<div class="eyebrow">Daily challenge · ${k}</div><h2>${r.found?`Found in ${r.guesses} guess${r.guesses===1?"":"es"}`:"Not found today"}</h2>
       <p>Today's city was <strong>${city.name}, ${city.country}</strong>. A new city appears at midnight UTC.</p>
       <div class="dstats"><div><strong>${streak}</strong><small>day streak</small></div><div><strong>${days}</strong><small>days played</small></div><div><strong>${wins}</strong><small>cities found</small></div></div>
-      <div class="sharebox"><pre id="shtxt">${esc(share)}</pre><button class="btn ghost" id="shcopy">Copy</button></div>
+      <div class="sharebox"><pre id="shtxt">${esc(share)}</pre><div style="display:flex;flex-direction:column;gap:6px">${canShare()?`<button class="btn" id="shshare">Share</button>`:""}<button class="btn ghost" id="shcopy">Copy</button></div></div>
       <h3>Today's leaderboard</h3><div class="dlist" id="dlist"><p class="small">Loading…</p></div>
       ${justPlayed&&shared===false?`<p class="small">Your result is saved on this device only. ${ON_SITE?"The shared leaderboard couldn't be reached.":"The shared leaderboard needs edit access to this game."}</p>`:""}
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="dback">Back to menu</button>${justPlayed?`<button class="btn ghost" id="dlook">Look at the map</button>`:""}</div>`);
     $("shcopy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(share);$("shcopy").textContent="Copied";}catch(e){const rg=document.createRange();rg.selectNodeContents($("shtxt"));const sel=getSelection();sel.removeAllRanges();sel.addRange(rg);$("shcopy").textContent="Selected";}});
+    if($("shshare"))$("shshare").addEventListener("click",()=>{navigator.share({title:"Hidden City",text:share,url:SITE_LINK}).catch(()=>{});});
     $("dback").addEventListener("click",()=>{resetBoard();menuTab="play";startScreen();});
     if($("dlook"))$("dlook").addEventListener("click",()=>{hide();$("passBtn").hidden=false;$("passBtn").textContent="Back to menu";document.querySelector(".guessrow").hidden=true;});
     const list=$("dlist"),d=await getDB();
@@ -2201,7 +2248,13 @@ document.querySelectorAll(".viewbtn").forEach(b=>b.addEventListener("click",()=>
   function setOpen(o){panel.classList.toggle("open",o);btn.setAttribute("aria-expanded",String(o));
     const n=S?seeker().guesses.length:0;let c=0;if(S)c=seeker().revealed.reduce((a,t)=>a+t.length,0);
     txt.textContent=o?"Hide clues":`Show clues (${c}) and guesses (${n})`;layout();}
-  btn.addEventListener("click",()=>setOpen(!panel.classList.contains("open")));
+  let dragY=null,dragged=false;
+  panel.addEventListener("pointerdown",e=>{if(!mq.matches||!e.target.closest(".sheethandle,.phead")||e.target.closest(".peek"))return;dragY=e.clientY;dragged=false;});
+  window.addEventListener("pointermove",e=>{if(dragY==null)return;const dy=e.clientY-dragY;if(Math.abs(dy)>8)dragged=true;
+    if(dragged){const open=panel.classList.contains("open");const k=open?(dy>0?1:.25):(dy<0?.35:.25);panel.style.transition="max-height .25s ease";panel.style.transform=`translateY(${Math.max(-60,Math.min(160,dy))*k}px)`;}});
+  const endDrag=e=>{if(dragY==null)return;const dy=e.clientY-dragY;dragY=null;panel.style.transform="";panel.style.transition="";if(dragged){if(dy<-30)setOpen(true);else if(dy>30)setOpen(false);}};
+  window.addEventListener("pointerup",endDrag);window.addEventListener("pointercancel",endDrag);
+  btn.addEventListener("click",()=>{if(dragged){dragged=false;return;}setOpen(!panel.classList.contains("open"));});
   const ro=new ResizeObserver(()=>{requestAnimationFrame(layout);});ro.observe(bar);ro.observe(panel);
   mq.addEventListener("change",layout);
   // keep the guess bar above the on-screen keyboard
@@ -2214,4 +2267,29 @@ document.querySelectorAll(".viewbtn").forEach(b=>b.addEventListener("click",()=>
 })();
 </script>
 
+<script>
+/* Installable app: offline cache and update prompt */
+(function(){
+  if(!("serviceWorker" in navigator)||location.protocol==="file:")return;
+  var updating=false;
+  function toast(worker){
+    if(document.getElementById("hcUpdate"))return;
+    var t=document.createElement("div");t.id="hcUpdate";
+    t.setAttribute("role","status");
+    t.style.cssText="position:fixed;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top,0px));z-index:50;display:flex;gap:10px;align-items:center;background:var(--panel);color:var(--ink);border:1px solid var(--accent);border-radius:999px;padding:6px 6px 6px 14px;font:600 13px var(--body);box-shadow:0 10px 30px rgba(0,0,0,.4);max-width:calc(100% - 32px)";
+    t.innerHTML='<span>A new version is ready</span><button style="border:none;border-radius:999px;padding:7px 12px;background:var(--accent);color:var(--accent-ink);font:700 13px var(--display);cursor:pointer">Update</button>';
+    t.querySelector("button").onclick=function(){updating=true;worker.postMessage("skip");};
+    document.body.appendChild(t);
+  }
+  navigator.serviceWorker.addEventListener("controllerchange",function(){if(updating)location.reload();});
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(function(reg){
+      if(reg.waiting&&navigator.serviceWorker.controller)toast(reg.waiting);
+      reg.addEventListener("updatefound",function(){var w=reg.installing;if(!w)return;w.addEventListener("statechange",function(){if(w.state==="installed"&&navigator.serviceWorker.controller)toast(w);});});
+      setInterval(function(){reg.update().catch(function(){});},30*60*1000);
+      document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")reg.update().catch(function(){});});
+    }).catch(function(){});
+  });
+})();
+</script>
 </body></html>
