@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-window.HC_VERSION="2026-11-09 18:18";
+window.HC_VERSION="2026-11-09 22:48";
 /* Hidden City: shared storage on Firebase Realtime Database.
    Gives the game the same small storage interface it uses inside Claude.
    Each device signs in anonymously, so the database rules can tell players apart. */
@@ -362,6 +362,43 @@ input.city:disabled{opacity:.5;}
 @keyframes pulse{0%,100%{opacity:.25;transform:scale(.8);}50%{opacity:1;transform:scale(1);}}
 .tleft{position:absolute;right:10px;top:-30px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-family:var(--mono);font-size:12px;color:var(--ink);box-shadow:0 4px 12px rgba(0,0,0,.25);}
 .tleft.low{color:#fff;background:var(--burning);border-color:var(--burning);}
+/* main menu */
+.overlay.menu{--ink:#eaf0fb;--muted:#9fb0cc;--faint:#6d7f9c;--line:rgba(160,190,255,.16);--panel:#0c1630;--panel-2:#111f3e;--ocean:#08112a;--land:#1a2c52;
+  background:linear-gradient(180deg,#050a17 0%,#0a1530 45%,#132a52 100%);backdrop-filter:none;-webkit-backdrop-filter:none;color:var(--ink);}
+#stars{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .5s ease;}
+.overlay.menu #stars{opacity:.6;animation:starsDrift 90s ease-in-out infinite alternate;}
+@keyframes starsDrift{from{transform:translateY(0);}to{transform:translateY(-14px);}}
+.overlay.menu .card{position:relative;z-index:1;background:rgba(8,15,32,.62);border-color:rgba(160,190,255,.12);box-shadow:0 30px 80px rgba(0,0,0,.35);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+.overlay.menu .card.home{background:transparent;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;}
+.mmhome{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;}
+.mmlogo{width:92px;height:92px;filter:drop-shadow(0 10px 30px rgba(111,211,189,.25));}
+.mmtitle{font-size:clamp(48px,12vw,74px)!important;line-height:.95!important;}
+.mmtag{font-size:16px;color:var(--muted)!important;margin-bottom:10px!important;}
+.mmbtns{display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px;margin-top:6px;}
+.mmbtn{width:100%;padding:16px 18px;border-radius:16px;font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:.01em;border:1px solid rgba(160,190,255,.22);background:rgba(255,255,255,.05);color:var(--ink);cursor:pointer;transition:transform .15s ease,background .15s ease,border-color .15s ease;}
+.mmbtn:hover{background:rgba(255,255,255,.09);border-color:rgba(160,190,255,.4);}
+.mmbtn:active{transform:scale(.98);}
+.mmbtn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);box-shadow:0 12px 34px rgba(255,181,71,.28);}
+.mmbtn.primary:hover{background:#ffc164;}
+.mmlinks{display:flex;align-items:center;gap:6px;color:var(--faint);}
+.mmlinks button{background:none;border:none;color:var(--muted);font-size:14px;font-weight:600;padding:10px 8px;cursor:pointer;}
+.mmlinks button:hover{color:var(--ink);}
+.mmhead{display:flex;align-items:center;gap:12px;}
+.back{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:7px 14px;font-weight:600;font-size:13px;cursor:pointer;}
+.back:hover{border-color:var(--muted);}
+.mmh2{font-size:30px!important;}
+.bigmodes{display:grid;gap:12px;}
+.bigmode{display:grid;grid-template-columns:56px 1fr;gap:16px;align-items:center;text-align:left;padding:18px;border-radius:18px;border:1px solid rgba(160,190,255,.16);background:rgba(255,255,255,.04);color:var(--ink);cursor:pointer;transition:border-color .15s ease,background .15s ease,transform .15s ease;}
+.bigmode:hover{border-color:var(--accent);background:rgba(255,181,71,.06);}
+.bigmode:active{transform:scale(.99);}
+.bigmode svg{width:56px;height:56px;}
+.bigmode strong{font-family:var(--display);font-weight:800;font-size:21px;display:block;margin-bottom:3px;}
+.bigmode span{color:var(--muted);font-size:13px;line-height:1.4;}
+.setgroup{display:flex;flex-direction:column;gap:8px;}
+.setlabel{font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.setgroup select{background:var(--ocean);color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit;}
+.menu-sw{grid-template-columns:repeat(4,1fr);}
+.menu-sw button[aria-pressed="true"] i{box-shadow:0 0 0 2px var(--accent);}
 .tabs{display:flex;gap:4px;background:var(--ocean);border:1px solid var(--line);border-radius:12px;padding:4px;}
 .tabs button{flex:1;background:none;border:none;color:var(--muted);border-radius:9px;padding:9px 6px;font-family:var(--display);font-weight:700;font-size:14px;}
 .tabs button[aria-selected="true"]{background:var(--panel-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);}
@@ -510,7 +547,7 @@ table.lb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
   </aside>
 </div>
 
-<div class="overlay" id="overlay"><div class="card" id="card"></div></div>
+<div class="overlay" id="overlay"><canvas id="stars" aria-hidden="true"></canvas><div class="card" id="card"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
@@ -1236,7 +1273,7 @@ const inPool=(c,diff)=>diff==="easy"?CAPITALS.has(c.name):diff==="normal"?NORMAL
 const poolOf=diff=>CITIES.filter(c=>inPool(c,diff));
 const exhausted=p=>!!(S&&S.settings&&S.settings.limit&&!p.found&&p.guesses.length>=S.settings.limit);
 function settingsSummary(st){st=st||SETTINGS;const a=[DIFFS[st.diff||"normal"].name];if(st.timer)a.push(`${st.timer} s per guess`);if(st.limit)a.push(`${st.limit} guesses max`);return a.join(" · ");}
-function buzz(d){try{if(!navigator.vibrate)return;const t=bandOf(d).tier;navigator.vibrate(d<1?[70,50,70,50,160]:t===3?[40,30,40]:t===2?28:t===1?14:8);}catch(e){}}
+function buzz(d){try{if(!navigator.vibrate)return;try{if(localStorage.getItem("hc-vibrate")==="0")return;}catch(e){}const t=bandOf(d).tier;navigator.vibrate(d<1?[70,50,70,50,160]:t===3?[40,30,40]:t===2?28:t===1?14:8);}catch(e){}}
 function applyGuess(p,c,tgt,diff){diff=diff||(S&&S.settings&&S.settings.diff)||"normal";const d=c.id===tgt.id?0:dist(c,tgt);const band=bandOf(d);p.guesses.push({city:c,d,band,brg:bearing(c,tgt)});
   const all=hintsFor(tgt,diff);let nh=null;
   if(diff==="easy"){const at=EASY_AT.indexOf(p.guesses.length);if(at>=0&&d!==0){p.revealed[at].push(0);nh=[at,0];}if(d===0)p.found=true;return {d,nh,all};}
@@ -1686,44 +1723,21 @@ function buildRecord(){
 
 /* ---------- Overlay screens ---------- */
 const overlay=$("overlay"),card=$("card");
-const show=html=>{card.innerHTML=html;const was=overlay.hidden;overlay.hidden=false;if(was)overlay.classList.remove("in"),void overlay.offsetWidth,overlay.classList.add("in");card.classList.remove("enter");void card.offsetWidth;card.classList.add("enter");};
+const show=html=>{overlay.classList.remove("menu");card.classList.remove("home");card.innerHTML=html;const was=overlay.hidden;overlay.hidden=false;if(was)overlay.classList.remove("in"),void overlay.offsetWidth,overlay.classList.add("in");card.classList.remove("enter");void card.offsetWidth;card.classList.add("enter");};
 const hide=()=>{overlay.hidden=true;};
-let pendingMode="duo",menuTab="play";
+let pendingMode="duo",menuTab="home";
 const names={n1:"Player 1",n2:"Player 2",solo:"Player 1"};
-function tabsHTML(){return `<div class="tabs" role="tablist">${[["play","Play"],["board","Leaderboard"],["ach","Achievements"]].map(([k,l])=>`<button role="tab" data-t="${k}" aria-selected="${menuTab===k}">${l}</button>`).join("")}</div>`;}
 function sourceNote(){return store.mode==="shared"?"Shared with everyone who opens this game":"Saved on this device";}
-function startScreen(){
-  let body="";
-  if(menuTab==="play"){
-    const m=pendingMode,saved=Online.saved(),dh=Daily.hist()[Daily.key()],streak=Daily.streak();
-    const nameField=`<div class="names one"><label>Your name<input class="city" id="ns" value="${esc(names.solo)}" maxlength="16"></label></div>`;
-    const settings=m==="daily"?"":`<div class="setbox">
-      <div class="seg" role="group" aria-label="Difficulty">${Object.entries(DIFFS).map(([k,v])=>`<button type="button" data-diff="${k}" aria-pressed="${SETTINGS.diff===k}">${v.name}</button>`).join("")}</div>
-      <p class="diffdesc" id="diffDesc">${DIFFS[SETTINGS.diff].desc} · ${poolOf(SETTINGS.diff).length} places to hide in</p>
-      <div class="selrow">${m==="solo"?"":`<label>Turn timer<select id="setTimer">${[[0,"Off"],[30,"30 s"],[60,"60 s"]].map(([v,l])=>`<option value="${v}" ${SETTINGS.timer==v?"selected":""}>${l}</option>`).join("")}</select></label>`}
-      <label>Guess limit<select id="setLimit">${[[0,"None"],[10,"10"],[15,"15"],[20,"20"],[30,"30"]].map(([v,l])=>`<option value="${v}" ${SETTINGS.limit==v?"selected":""}>${l}</option>`).join("")}</select></label></div></div>`;
-    let action="";
-    if(m==="duo")action=`<div class="names" id="namesRow">
-      <label>Player 1<input class="city" id="n1" value="${esc(names.n1)}" maxlength="16"></label>
-      <label>Player 2<input class="city" id="n2" value="${esc(names.n2)}" maxlength="16"></label></div>${settings}<button class="btn wide" id="go">Start</button>`;
-    else if(m==="solo")action=`${nameField}${settings}<button class="btn wide" id="go">Start</button>`;
-    else if(m==="online")action=`${nameField}${settings}
-      ${saved?`<button class="btn wide" id="orejoin">Rejoin room ${esc(saved.code)}</button>`:""}
-      <button class="btn ${saved?"ghost ":""}wide" id="ocreate">Create a room</button>
-      <div class="joinrow"><input class="city" id="ocode" placeholder="Room code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="btn ghost" id="ojoin">Join</button></div>
-      <p class="small">Each player uses their own phone. The room's creator picks the settings. ${ON_SITE?`Send your friend the link to this game so they can join.`:`Your friend needs edit access to this game, shared from the Share menu at the top.`}</p>`;
-    else action=`${nameField}<div class="dailybox"><div><strong>${streak}</strong><small>day streak</small></div><p>${dh?(dh.found?`You found today's city in ${dh.guesses} guess${dh.guesses===1?"":"es"}.`:"You didn't find today's city.")+" A new one appears at midnight UTC.":"Everyone gets the same hidden city today. Find it in as few guesses as you can."}</p></div>
-      <button class="btn wide" id="dgo">${dh?"See today's results":"Play today's city"}</button>`;
-    body=`${installTip()}<p>Hide in a city, then hunt for your opponent's. Every guess shows how hot or cold you are, and the clues get sharper the closer you get.</p>
-  <div class="ramp">${BANDS.slice().reverse().map(b=>`<i style="background:${b.color}"></i>`).join("")}</div>
-  <div class="modes">
-    <button class="mode" data-m="duo" aria-pressed="${m==="duo"}"><strong>Same device</strong><span>Two players, pass the phone</span></button>
-    <button class="mode" data-m="online" aria-pressed="${m==="online"}"><strong>Online</strong><span>Two phones, join with a code</span></button>
-    <button class="mode" data-m="solo" aria-pressed="${m==="solo"}"><strong>Solo practice</strong><span>The computer hides, you seek</span></button>
-    <button class="mode" data-m="daily" aria-pressed="${m==="daily"}"><strong>Daily challenge</strong><span>${streak?`${streak}-day streak`:"Same city for everyone today"}</span></button>
-  </div>
-  ${action}
-  <details class="howto"><summary>How to play</summary><ul class="rules">
+/* ---------- Main menu: Home → Play (Singleplayer / Multiplayer) and Settings ---------- */
+const showMenu=html=>{show(html);overlay.classList.add("menu");};
+const LOGO=`<svg class="mmlogo" viewBox="0 0 120 120" aria-hidden="true"><defs><radialGradient id="lg" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#2a4a63"/><stop offset="1" stop-color="#132634"/></radialGradient></defs>
+  <circle cx="60" cy="60" r="44" fill="url(#lg)" stroke="#6fd3bd" stroke-width="2.5"/>
+  <g fill="none" stroke="#6fd3bd" stroke-opacity=".35" stroke-width="1.6"><ellipse cx="60" cy="60" rx="18" ry="44"/><ellipse cx="60" cy="60" rx="34" ry="44"/><path d="M16 60h88M22 38h76M22 82h76"/></g>
+  <circle cx="72" cy="50" r="26" fill="none" stroke="#ff7a1a" stroke-width="2.2" stroke-opacity=".9"/><circle cx="72" cy="50" r="16" fill="none" stroke="#ffc233" stroke-width="2.2"/>
+  <path d="M72 64c-7-9-11-14-11-19a11 11 0 0 1 22 0c0 5-4 10-11 19z" fill="#ffb547"/><circle cx="72" cy="45" r="4.2" fill="#1a1206"/></svg>`;
+const ICON_ONE=`<svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="27" fill="rgba(255,181,71,.12)" stroke="rgba(255,181,71,.5)"/><circle cx="28" cy="22" r="7" fill="#ffb547"/><path d="M15 42c1.5-7 6.5-11 13-11s11.5 4 13 11" fill="#ffb547"/></svg>`;
+const ICON_TWO=`<svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="27" fill="rgba(255,138,216,.10)" stroke="rgba(255,138,216,.45)"/><circle cx="21" cy="23" r="6" fill="#ffb547"/><path d="M10 41c1-6 5.5-9.5 11-9.5s10 3.5 11 9.5" fill="#ffb547"/><circle cx="36" cy="22" r="6" fill="#ff8ad8"/><path d="M27 40c1-6 4-9.5 9-9.5s9.5 3.5 10.5 9.5" fill="#ff8ad8"/></svg>`;
+function howToHTML(){return `<details class="howto"><summary>How to play</summary><ul class="rules">
     <li>Every guess shows its exact distance and a heat colour. Beyond 1,000 km you also get a rough arrow; closer than that, the arrow disappears.</li>
     <li>Far away: continent, hemispheres, coast or inland, and how many countries border it.</li>
     <li>Within 3,000 km: the country's size, latitude, population, time zone and elevation.</li>
@@ -1732,46 +1746,120 @@ function startScreen(){
     <li>On Easy you only get three clues: continent after your 1st guess, population after your 3rd and language after your 5th.</li>
     <li>Find the city first to win. If your opponent has had one guess fewer, they get a last chance to tie.</li>
     <li>With a turn timer, running out of time skips your turn. With a guess limit, running out means you can't guess any more.</li>
-  </ul></details>`;
-  }else if(menuTab==="board"){
-    const st=computeStats(store.games);
-    body=st.length?`<div class="lead"><span class="crown">All-time leader</span><strong>${esc(st[0].name)}</strong><em>${st[0].found} ${st[0].found===1?"city":"cities"} found · ${st[0].wins} ${st[0].wins===1?"win":"wins"}</em></div>
+  </ul></details>`;}
+function headHTML(title,eyebrow,backTo){return `<div class="mmhead"><button class="back" data-back="${backTo}" aria-label="Back">‹ Back</button><span class="eyebrow">${eyebrow}</span></div><h2 class="mmh2">${title}</h2>`;}
+function setupHTML(group){
+  const m=pendingMode,saved=Online.saved(),dh=Daily.hist()[Daily.key()],streak=Daily.streak();
+  const nameField=`<div class="names one"><label>Your name<input class="city" id="ns" value="${esc(names.solo)}" maxlength="16" autocomplete="nickname"></label></div>`;
+  const settings=m==="daily"?"":`<div class="setbox">
+    <div class="seg" role="group" aria-label="Difficulty">${Object.entries(DIFFS).map(([k,v])=>`<button type="button" data-diff="${k}" aria-pressed="${SETTINGS.diff===k}">${v.name}</button>`).join("")}</div>
+    <p class="diffdesc" id="diffDesc">${DIFFS[SETTINGS.diff].desc} · ${poolOf(SETTINGS.diff).length} places to hide in</p>
+    <div class="selrow">${m==="solo"?"":`<label>Turn timer<select id="setTimer">${[[0,"Off"],[30,"30 s"],[60,"60 s"]].map(([v,l])=>`<option value="${v}" ${SETTINGS.timer==v?"selected":""}>${l}</option>`).join("")}</select></label>`}
+    <label>Guess limit<select id="setLimit">${[[0,"None"],[10,"10"],[15,"15"],[20,"20"],[30,"30"]].map(([v,l])=>`<option value="${v}" ${SETTINGS.limit==v?"selected":""}>${l}</option>`).join("")}</select></label></div></div>`;
+  let action="";
+  if(m==="duo")action=`<div class="names" id="namesRow">
+    <label>Player 1<input class="city" id="n1" value="${esc(names.n1)}" maxlength="16"></label>
+    <label>Player 2<input class="city" id="n2" value="${esc(names.n2)}" maxlength="16"></label></div>${settings}<button class="btn wide" id="go">Start</button>`;
+  else if(m==="solo")action=`${nameField}${settings}<button class="btn wide" id="go">Start</button>`;
+  else if(m==="online")action=`${nameField}${settings}
+    ${saved?`<button class="btn wide" id="orejoin">Rejoin room ${esc(saved.code)}</button>`:""}
+    <button class="btn ${saved?"ghost ":""}wide" id="ocreate">Create a room</button>
+    <div class="joinrow"><input class="city" id="ocode" placeholder="Room code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="btn ghost" id="ojoin">Join</button></div>
+    <p class="small">Each player uses their own phone. The room's creator picks the settings. ${ON_SITE?`Send your friend the link to this game so they can join.`:`Your friend needs edit access to this game, shared from the Share menu at the top.`}</p>`;
+  else action=`${nameField}<div class="dailybox"><div><strong>${streak}</strong><small>day streak</small></div><p>${dh?(dh.found?`You found today's city in ${dh.guesses} guess${dh.guesses===1?"":"es"}.`:"You didn't find today's city.")+" A new one appears at midnight UTC.":"Everyone gets the same hidden city today. Find it in as few guesses as you can."}</p></div>
+    <button class="btn wide" id="dgo">${dh?"See today's results":"Play today's city"}</button>`;
+  const opts=group==="single"
+    ?[["solo","Solo practice","The computer hides, you seek"],["daily","Daily challenge",streak?`${streak}-day streak`:"Same city for everyone today"]]
+    :[["online","Online","Two phones, join with a code"],["duo","Same device","Two players, pass the phone"]];
+  return `<div class="modes">${opts.map(([k,t,d])=>`<button class="mode" data-m="${k}" aria-pressed="${m===k}"><strong>${t}</strong><span>${d}</span></button>`).join("")}</div>${action}${howToHTML()}`;
+}
+function settingsHTML(){
+  const mt=document.documentElement.getAttribute("data-mt")||"dark";
+  let vib=true;try{vib=localStorage.getItem("hc-vibrate")!=="0";}catch(e){}
+  const swatches=BACKDROPS.map(b=>`<button type="button" data-bg2="${b.id}" aria-pressed="${bgChoice===b.id}"><i style="background:${b.sw}"></i>${b.name}</button>`).join("");
+  return `<div class="setgroup"><div class="setlabel">Map style</div>
+      <div class="seg" role="group" aria-label="Map style">${[["dark","Dark"],["light","Light"],["sat","Cartoon"],["real","Satellite"]].map(([k,l])=>`<button type="button" data-mt2="${k}" aria-pressed="${mt===k}">${l}</button>`).join("")}</div></div>
+    <div class="setgroup"><div class="setlabel">Map background</div><div class="bgsw menu-sw">${swatches}</div>
+      <label class="bgcustom" for="bgColor2">Custom colour <input type="color" id="bgColor2" value="${byId("bgColor").value}"></label></div>
+    <div class="setgroup"><div class="setlabel">Map view</div>
+      <div class="seg" role="group" aria-label="Map view"><button type="button" data-view2="flat" aria-pressed="${!GLOBE.on}">Flat map (2D)</button><button type="button" data-view2="globe" aria-pressed="${GLOBE.on}">Globe (3D)</button></div></div>
+    ${navigator.vibrate&&matchMedia("(pointer:coarse)").matches?`<div class="setgroup"><div class="setlabel">Vibration</div><div class="seg" role="group" aria-label="Vibration"><button type="button" data-vib="1" aria-pressed="${vib}">On</button><button type="button" data-vib="0" aria-pressed="${!vib}">Off</button></div></div>`:""}
+    <div class="setgroup"><div class="setlabel">Language</div><select disabled aria-label="Language"><option>English</option></select><p class="small">More languages may come later.</p></div>`;
+}
+function boardHTML(){
+  const st=computeStats(store.games);
+  return st.length?`<div class="lead"><span class="crown">All-time leader</span><strong>${esc(st[0].name)}</strong><em>${st[0].found} ${st[0].found===1?"city":"cities"} found · ${st[0].wins} ${st[0].wins===1?"win":"wins"}</em></div>
     <div class="lbwrap"><table class="lb"><thead><tr><th>#</th><th>Player</th><th title="Correct guesses">Found</th><th>Wins</th><th>Draws</th><th>Games</th><th title="Fewest guesses to find a city">Best</th></tr></thead><tbody>
     ${st.map((s,i)=>`<tr><td>${i+1}</td><td>${esc(s.name)}</td><td><b>${s.found}</b></td><td>${s.wins}</td><td>${s.draws}</td><td>${s.games}</td><td>${s.best??"–"}</td></tr>`).join("")}
-    </tbody></table></div><p style="font-size:12px">${sourceNote()}. Ranked by cities found, then wins, then best game.</p>`
-    :`<div class="emptybox"><strong>No games played yet</strong><p>Finish a game and the players show up here, ranked by how many hidden cities they found.</p></div><p style="font-size:12px">${sourceNote()}.</p>`;
-  }else{
-    const st=computeStats(store.games);
-    body=`<div class="achs">${ACH.map(a=>{const who=st.filter(s=>s.ach.has(a.id));return `<div class="ach ${who.length?"got":""}"><span class="ai">${a.icon}</span><div><strong>${a.name}</strong><small>${a.desc}</small>${who.length?`<div class="who">${who.map(s=>`<span>${esc(s.name)}</span>`).join("")}</div>`:`<div class="who none">Not unlocked yet</div>`}</div></div>`;}).join("")}</div>
-    <p style="font-size:12px">${sourceNote()}.</p>`;
-  }
-  show(`<div class="eyebrow">A hide-and-seek game for the whole planet</div><h1>Hidden City</h1>${tabsHTML()}${body}${window.HC_VERSION?`<p class="ver">Version ${window.HC_VERSION}</p>`:""}`);
-  card.querySelectorAll("[data-t]").forEach(b=>b.addEventListener("click",()=>{startScreen.save();menuTab=b.dataset.t;startScreen();}));
-  if(menuTab!=="play")return;
+    </tbody></table></div><p class="small">${sourceNote()}. Ranked by cities found, then wins, then best game.</p>`
+    :`<div class="emptybox"><strong>No games played yet</strong><p>Finish a game and the players show up here, ranked by how many hidden cities they found.</p></div><p class="small">${sourceNote()}.</p>`;
+}
+function achHTML(){
+  const st=computeStats(store.games);
+  return `<div class="achs">${ACH.map(a=>{const who=st.filter(s=>s.ach.has(a.id));return `<div class="ach ${who.length?"got":""}"><span class="ai">${a.icon}</span><div><strong>${a.name}</strong><small>${a.desc}</small>${who.length?`<div class="who">${who.map(s=>`<span>${esc(s.name)}</span>`).join("")}</div>`:`<div class="who none">Not unlocked yet</div>`}</div></div>`;}).join("")}</div>
+    <p class="small">${sourceNote()}.</p>`;
+}
+function startScreen(){
+  if(menuTab==="play")menuTab="home";
+  const scr=menuTab;
+  if(scr==="single"&&!["solo","daily"].includes(pendingMode))pendingMode="solo";
+  if(scr==="multi"&&!["duo","online"].includes(pendingMode))pendingMode="online";
+  let html="";
+  if(scr==="home"){
+    html=`<div class="mmhome">${LOGO}<div class="eyebrow">A hide-and-seek game for the whole planet</div><h1 class="mmtitle">Hidden City</h1>
+      <p class="mmtag">Hide anywhere on Earth. Find your rival first.</p>${installTip()}
+      <div class="mmbtns"><button class="mmbtn primary" id="mPlay">Play</button><button class="mmbtn" id="mSettings">Settings</button></div>
+      <div class="mmlinks"><button id="mBoard">Leaderboard</button><span aria-hidden="true">·</span><button id="mAch">Achievements</button></div>
+      ${window.HC_VERSION?`<p class="ver">Version ${window.HC_VERSION}</p>`:""}</div>`;
+  }else if(scr==="mode"){
+    html=`${headHTML("Choose a game mode","Play","home")}<div class="bigmodes">
+      <button class="bigmode" id="mSingle">${ICON_ONE}<div><strong>Singleplayer</strong><span>Solo practice against the computer, or today's daily challenge</span></div></button>
+      <button class="bigmode" id="mMulti">${ICON_TWO}<div><strong>Multiplayer</strong><span>Play a friend online on two phones, or pass one device</span></div></button></div>`;
+  }else if(scr==="single")html=`${headHTML("Singleplayer","Play","mode")}${setupHTML("single")}`;
+  else if(scr==="multi")html=`${headHTML("Multiplayer","Play","mode")}${setupHTML("multi")}`;
+  else if(scr==="settings")html=`${headHTML("Settings","Hidden City","home")}${settingsHTML()}`;
+  else if(scr==="board")html=`${headHTML("Leaderboard","Hidden City","home")}${boardHTML()}`;
+  else html=`${headHTML("Achievements","Hidden City","home")}${achHTML()}`;
+  showMenu(html);
+  card.classList.toggle("home",scr==="home");
+  const go=to=>{startScreen.save();menuTab=to;startScreen();};
+  card.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.back)));
+  const bind=(id,fn)=>{const e=$(id);if(e)e.addEventListener("click",fn);};
+  bind("mPlay",()=>go("mode"));bind("mSettings",()=>go("settings"));bind("mBoard",()=>go("board"));bind("mAch",()=>go("ach"));
+  bind("mSingle",()=>{if(!["solo","daily"].includes(pendingMode))pendingMode="solo";go("single");});
+  bind("mMulti",()=>{if(!["duo","online"].includes(pendingMode))pendingMode="online";go("multi");});
+  bind("installBtn",async()=>{const ev=window.HC_INSTALL;window.HC_INSTALL=null;try{ev.prompt();await ev.userChoice;}catch(e){}startScreen();});
+  bind("installX",()=>{try{localStorage.setItem("hc-install-tip","1");}catch(e){}startScreen();});
+  if(scr==="settings"){
+    card.querySelectorAll("[data-mt2]").forEach(b=>b.addEventListener("click",()=>{applyMapTheme(b.dataset.mt2);card.querySelectorAll("[data-mt2]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));}));
+    card.querySelectorAll("[data-bg2]").forEach(b=>b.addEventListener("click",()=>{applyBackdrop(b.dataset.bg2);card.querySelectorAll("[data-bg2]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));}));
+    $("bgColor2").addEventListener("input",e=>{byId("bgColor").value=e.target.value;applyBackdrop("custom",e.target.value);card.querySelectorAll("[data-bg2]").forEach(x=>x.setAttribute("aria-pressed","false"));});
+    card.querySelectorAll("[data-view2]").forEach(b=>b.addEventListener("click",()=>{GLOBE.setOn(b.dataset.view2==="globe");card.querySelectorAll("[data-view2]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));}));
+    card.querySelectorAll("[data-vib]").forEach(b=>b.addEventListener("click",()=>{try{localStorage.setItem("hc-vibrate",b.dataset.vib);}catch(e){}card.querySelectorAll("[data-vib]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));if(b.dataset.vib==="1")try{navigator.vibrate(30);}catch(e){}}));
+    return;}
+  if(scr!=="single"&&scr!=="multi")return;
   card.querySelectorAll(".mode").forEach(b=>b.addEventListener("click",()=>{startScreen.save();pendingMode=b.dataset.m;try{localStorage.setItem("hidden-city-mode",pendingMode);}catch(e){}startScreen();}));
   card.querySelectorAll("[data-diff]").forEach(b=>b.addEventListener("click",()=>{SETTINGS.diff=b.dataset.diff;saveSettings();card.querySelectorAll("[data-diff]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));$("diffDesc").textContent=`${DIFFS[SETTINGS.diff].desc} · ${poolOf(SETTINGS.diff).length} places to hide in`;}));
   if($("setTimer"))$("setTimer").addEventListener("change",e=>{SETTINGS.timer=+e.target.value;saveSettings();});
   if($("setLimit"))$("setLimit").addEventListener("change",e=>{SETTINGS.limit=+e.target.value;saveSettings();});
   const myName=()=>{startScreen.save();return (names.solo||"").trim()||"Player 1";};
-  if($("go"))$("go").addEventListener("click",()=>{
+  bind("go",()=>{
     startScreen.save();
     if(pendingMode==="solo"){S=newState("solo",[myName(),"Computer"]);const pool=poolOf(S.settings.diff);S.players[1].secret=pool[Math.floor(Math.random()*pool.length)];beginPlay();}
     else{const n1=names.n1.trim()||"Player 1",n2=names.n2.trim()||"Player 2";S=newState("duo",[n1,pkey(n2)===pkey(n1)?n2+" 2":n2]);hideScreen(0);}
   });
-  if($("ocreate"))$("ocreate").addEventListener("click",()=>Online.create(myName()));
-  if($("ojoin"))$("ojoin").addEventListener("click",()=>Online.join($("ocode").value,myName()));
+  bind("ocreate",()=>Online.create(myName()));
+  bind("ojoin",()=>Online.join($("ocode").value,myName()));
   if($("ocode"))$("ocode").addEventListener("keydown",e=>{if(e.key==="Enter")Online.join($("ocode").value,myName());});
-  if($("orejoin"))$("orejoin").addEventListener("click",()=>Online.rejoin(Online.saved()));
-  if($("dgo"))$("dgo").addEventListener("click",()=>Daily.start(myName()));
-  if($("installBtn"))$("installBtn").addEventListener("click",async()=>{const ev=window.HC_INSTALL;window.HC_INSTALL=null;try{ev.prompt();await ev.userChoice;}catch(e){}startScreen.save();startScreen();});
-  if($("installX"))$("installX").addEventListener("click",()=>{try{localStorage.setItem("hc-install-tip","1");}catch(e){}startScreen.save();startScreen();});
+  bind("orejoin",()=>Online.rejoin(Online.saved()));
+  bind("dgo",()=>Daily.start(myName()));
 }
 startScreen.save=()=>{const v=id=>{const e=card.querySelector("#"+id);return e?e.value:null;};
   if(v("n1")!=null)names.n1=v("n1");if(v("n2")!=null)names.n2=v("n2");if(v("ns")!=null)names.solo=v("ns");
   try{localStorage.setItem("hidden-city-names",JSON.stringify(names));}catch(e){}};
 try{Object.assign(names,JSON.parse(localStorage.getItem("hidden-city-names")||"{}"));}catch(e){}
 try{const pm=localStorage.getItem("hidden-city-mode");if(pm&&["duo","online","solo","daily"].includes(pm))pendingMode=pm;}catch(e){}
-store.listeners.push(()=>{if(!overlay.hidden&&card.querySelector(".tabs")&&menuTab!=="play")startScreen();});
+store.listeners.push(()=>{if(!overlay.hidden&&overlay.classList.contains("menu")&&(menuTab==="board"||menuTab==="ach"))startScreen();});
 function hideScreen(i){
   const p=S.players[i];
   show(`<div class="eyebrow">${esc(p.name)}, your turn to hide</div>
@@ -1886,7 +1974,7 @@ function playAgain(){
 async function getDB(){try{if(window.claude&&window.claude.use)return await window.claude.use("db");return window.HC_DB||null;}catch(e){return null;}}
 const ON_SITE=!window.claude;
 const canShare=()=>ON_SITE&&!!navigator.share;
-window.hcIdle=()=>!S||S.phase==="over"||(!overlay.hidden&&!!card.querySelector(".tabs"));
+window.hcIdle=()=>!S||S.phase==="over"||(!overlay.hidden&&overlay.classList.contains("menu"));
 const isStandalone=()=>window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 function installTip(){
   if(!ON_SITE||isStandalone())return "";
@@ -1895,7 +1983,7 @@ function installTip(){
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
   if(ios&&!dismissed)return `<div class="installtip"><span>Play it like an app: tap <b>Share</b>, then <b>Add to Home Screen</b>.</span><button class="iconbtn" id="installX" aria-label="Hide this tip">×</button></div>`;
   return "";}
-window.addEventListener("hc-install",()=>{if(!overlay.hidden&&menuTab==="play"&&card.querySelector(".tabs")){startScreen.save();startScreen();}});
+window.addEventListener("hc-install",()=>{if(!overlay.hidden&&overlay.classList.contains("menu")&&menuTab==="home")startScreen();});
 const SITE_LINK=location.origin+location.pathname;
 async function dailyId(d){return (d&&d.uid&&await d.uid())||deviceId();}
 setTimeout(()=>{getDB().then(d=>{if(d&&d.cleanupRooms)d.cleanupRooms();});},4000);
@@ -2170,6 +2258,13 @@ const Daily={
   }
 };
 
+/* faint stars behind the main menu */
+(()=>{const cv=byId("stars");let w=0,h=0;
+  function draw(){const dpr=Math.min(2,window.devicePixelRatio||1);w=innerWidth;h=innerHeight;cv.width=w*dpr;cv.height=h*dpr;const x=cv.getContext("2d");x.scale(dpr,dpr);
+    let seed=11;const r=()=>(seed=(seed*16807)%2147483647)/2147483647;const n=Math.round(w*h/2600);
+    for(let i=0;i<n;i++){const big=r()<.05,a=big?.55+r()*.35:.12+r()*.4,s=big?1.2+r()*.8:.4+r()*.7;x.fillStyle=`rgba(${215+r()*40|0},${225+r()*30|0},255,${a})`;x.beginPath();x.arc(r()*w,r()*h,s,0,7);x.fill();}
+    const g=x.createRadialGradient(w*.5,h*1.15,0,w*.5,h*1.15,Math.max(w,h)*.9);g.addColorStop(0,"rgba(90,140,230,.16)");g.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=g;x.fillRect(0,0,w,h);}
+  draw();let t=0;addEventListener("resize",()=>{clearTimeout(t);t=setTimeout(draw,200);});})();
 sizeAll();
 startScreen();
 /* ---------- Globe view (orthographic, drag to spin) ---------- */
