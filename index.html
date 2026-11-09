@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
+window.HC_VERSION="2026-11-09 18:09";
 /* Hidden City: shared storage on Firebase Realtime Database.
    Gives the game the same small storage interface it uses inside Claude. */
 (function(){
@@ -334,6 +335,7 @@ input.city:disabled{opacity:.5;}
 .dlist .row span:first-child{color:var(--faint);font-family:var(--mono);font-size:12px;}
 .dlist .row span:last-child{font-family:var(--mono);font-size:13px;}
 .roomcode{font-family:var(--mono);font-weight:700;font-size:clamp(40px,12vw,64px);letter-spacing:.25em;text-align:center;color:var(--accent);padding:10px 0 6px;user-select:all;}
+.ver{font-size:11px!important;color:var(--faint)!important;text-align:center;margin:0;}
 .series{font-size:14px!important;color:var(--ink)!important;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;}
 .waiting{display:flex;align-items:center;gap:10px;font-size:13px;}
 .pulse{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pulse 1.2s ease-in-out infinite;}
@@ -1723,7 +1725,7 @@ function startScreen(){
     body=`<div class="achs">${ACH.map(a=>{const who=st.filter(s=>s.ach.has(a.id));return `<div class="ach ${who.length?"got":""}"><span class="ai">${a.icon}</span><div><strong>${a.name}</strong><small>${a.desc}</small>${who.length?`<div class="who">${who.map(s=>`<span>${esc(s.name)}</span>`).join("")}</div>`:`<div class="who none">Not unlocked yet</div>`}</div></div>`;}).join("")}</div>
     <p style="font-size:12px">${sourceNote()}.</p>`;
   }
-  show(`<div class="eyebrow">A hide-and-seek game for the whole planet</div><h1>Hidden City</h1>${tabsHTML()}${body}`);
+  show(`<div class="eyebrow">A hide-and-seek game for the whole planet</div><h1>Hidden City</h1>${tabsHTML()}${body}${window.HC_VERSION?`<p class="ver">Version ${window.HC_VERSION}</p>`:""}`);
   card.querySelectorAll("[data-t]").forEach(b=>b.addEventListener("click",()=>{startScreen.save();menuTab=b.dataset.t;startScreen();}));
   if(menuTab!=="play")return;
   card.querySelectorAll(".mode").forEach(b=>b.addEventListener("click",()=>{startScreen.save();pendingMode=b.dataset.m;try{localStorage.setItem("hidden-city-mode",pendingMode);}catch(e){}startScreen();}));
@@ -1864,6 +1866,7 @@ function playAgain(){
 async function getDB(){try{if(window.claude&&window.claude.use)return await window.claude.use("db");return window.HC_DB||null;}catch(e){return null;}}
 const ON_SITE=!window.claude;
 const canShare=()=>ON_SITE&&!!navigator.share;
+window.hcIdle=()=>!S||S.phase==="over"||(!overlay.hidden&&!!card.querySelector(".tabs"));
 const isStandalone=()=>window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 function installTip(){
   if(!ON_SITE||isStandalone())return "";
@@ -2340,8 +2343,10 @@ document.querySelectorAll(".viewbtn").forEach(b=>b.addEventListener("click",()=>
   navigator.serviceWorker.addEventListener("controllerchange",function(){if(updating)location.reload();});
   window.addEventListener("load",function(){
     navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(function(reg){
-      if(reg.waiting&&navigator.serviceWorker.controller)toast(reg.waiting);
-      reg.addEventListener("updatefound",function(){var w=reg.installing;if(!w)return;w.addEventListener("statechange",function(){if(w.state==="installed"&&navigator.serviceWorker.controller)toast(w);});});
+      // a new version installs itself right away when no game is in progress; mid-game it asks first
+      function ready(w){if(window.hcIdle&&window.hcIdle()){updating=true;w.postMessage("skip");}else toast(w);}
+      if(reg.waiting&&navigator.serviceWorker.controller)ready(reg.waiting);
+      reg.addEventListener("updatefound",function(){var w=reg.installing;if(!w)return;w.addEventListener("statechange",function(){if(w.state==="installed"&&navigator.serviceWorker.controller)ready(w);});});
       setInterval(function(){reg.update().catch(function(){});},30*60*1000);
       document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")reg.update().catch(function(){});});
     }).catch(function(){});
