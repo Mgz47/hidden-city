@@ -1872,7 +1872,7 @@ const Online=(()=>{
       if(ref!==O.ref)return;
       if(!snap.metadata||!snap.metadata.fromCache)clearTimeout(O.wait);
       if(!snap.exists){clearRoom();return err("The room was closed.");}
-      O.doc=snap.data();onDoc(O.doc);
+      const data=snap.data();O.doc=data;onDoc(data);
     },()=>{err(`Lost the connection to room ${esc(O.code)}. Go back and rejoin it from the Online menu.`);});
   }
   O.leave=()=>{if(O.unsub)O.unsub();O.unsub=null;O.ref=null;O.doc=null;O.screen=null;clearTimeout(O.wait);stopTurnTimer();};
@@ -1887,7 +1887,8 @@ const Online=(()=>{
       const mine=p[me].sec!=null,theirs=other&&other.sec!=null;
       if(!mine){if(O.screen!=="hide")hideOnline(d);return;}
       if(theirs){
-        if(me===0&&!O.starting){O.starting=true;O.ref.update({status:"playing",turn:0,turnAt:Date.now()}).catch(()=>{O.starting=false;});}
+        // start on the next tick: some databases report our own write back instantly, mid-render
+        if(me===0&&!O.starting){O.starting=true;const ref=O.ref;setTimeout(()=>{if(ref&&O.ref===ref&&O.doc&&O.doc.status==="hiding")ref.update({status:"playing",turn:0,turnAt:Date.now()}).catch(()=>{O.starting=false;});},0);}
         if(O.screen!=="starting"){O.screen="starting";show(`<div class="eyebrow">Room ${d.code}</div><h2>Both cities are hidden</h2><p>Starting the game…</p>`);}
         return;}
       if(O.screen!=="waithide"){O.screen="waithide";const c=dec(p[me].sec,d.code);
