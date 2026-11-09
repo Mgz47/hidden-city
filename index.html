@@ -15,10 +15,12 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{background:#0c1a22}body{margin:0;font:14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-window.HC_VERSION="2026-11-09 18:09";
+window.HC_VERSION="2026-11-09 18:18";
 /* Hidden City: shared storage on Firebase Realtime Database.
-   Gives the game the same small storage interface it uses inside Claude. */
+   Gives the game the same small storage interface it uses inside Claude.
+   Each device signs in anonymously, so the database rules can tell players apart. */
 (function(){
   if(!window.firebase||!firebase.initializeApp)return;
   var app=firebase.initializeApp({
@@ -31,34 +33,52 @@ window.HC_VERSION="2026-11-09 18:09";
     appId:"1:339466940691:web:85deb1a6bbc5298580aae6"
   });
   var rtdb=firebase.database(app);
-  // daily results live directly under daily/<date>
+  var uid=null;
+  // sign in once per device; if anonymous sign-in isn't switched on yet, carry on without it
+  var ready=(firebase.auth?new Promise(function(res){
+    var auth=firebase.auth(app),done=false,finish=function(){if(!done){done=true;res();}};
+    auth.onAuthStateChanged(function(u){if(u){uid=u.uid;finish();}});
+    auth.signInAnonymously().catch(function(){finish();});
+    setTimeout(finish,6000);
+  }):Promise.resolve());
   function mapPath(p){return String(p).replace(/^daily\/([^/]+)\/results(\/|$)/,"daily/$1$2").replace(/\/$/,"");}
   function isPlain(v){return v&&typeof v==="object"&&!Array.isArray(v);}
   // Realtime Database replaces whole children on update, so nested changes are flattened into paths
   function flatten(obj,prefix,out){out=out||{};for(var k in obj){var v=obj[k],key=prefix?prefix+"/"+k:k;
       if(isPlain(v)&&Object.keys(v).length)flatten(v,key,out);else out[key]=(v===undefined?null:v);}return out;}
   function snap(s){var v=s.val();return {id:s.key,exists:v!==null&&v!==undefined,data:function(){return v===null?undefined:JSON.parse(JSON.stringify(v));},metadata:{fromCache:false,hasPendingWrites:false}};}
+  function after(fn){return ready.then(fn);}
+  function listen(q,handler,err){var off=null,cancelled=false;
+    after(function(){if(cancelled)return;q.on("value",handler,function(e){err&&err(e);});off=function(){q.off("value",handler);};});
+    return function(){cancelled=true;if(off)off();};}
   function docRef(path){var ref=rtdb.ref(mapPath(path));
     return {id:ref.key,path:path,
-      get:function(){return ref.get().then(snap);},
-      set:function(d){return ref.set(JSON.parse(JSON.stringify(d)));},
-      update:function(d){return ref.update(flatten(d,"",{}));},
-      delete:function(){return ref.remove();},
+      get:function(){return after(function(){return ref.get().then(snap);});},
+      set:function(d){return after(function(){return ref.set(JSON.parse(JSON.stringify(d)));});},
+      update:function(d){return after(function(){return ref.update(flatten(d,"",{}));});},
+      delete:function(){return after(function(){return ref.remove();});},
       acquire:function(){return Promise.resolve({acquired:true});},
       release:function(){return Promise.resolve();},
-      onSnapshot:function(next,err){var h=function(s){next(snap(s));};ref.on("value",h,function(e){err&&err(e);});return function(){ref.off("value",h);};}};}
+      onSnapshot:function(next,err){return listen(ref,function(s){next(snap(s));},err);}};}
   function colRef(path,lim){var ref=rtdb.ref(mapPath(path));
     function q(){return lim?ref.limitToLast(lim):ref;}
     function list(s){var docs=[];s.forEach(function(c){docs.push(snap(c));});return {docs:docs,size:docs.length,empty:!docs.length,docChanges:function(){return [];},metadata:{fromCache:false}};}
     var api={path:path,
       doc:function(id){return docRef(path+"/"+(id||ref.push().key));},
-      add:function(d){var r=ref.push();return r.set(JSON.parse(JSON.stringify(d))).then(function(){return docRef(path+"/"+r.key);});},
+      add:function(d){return after(function(){var r=ref.push();return r.set(JSON.parse(JSON.stringify(d))).then(function(){return docRef(path+"/"+r.key);});});},
       limit:function(n){return colRef(path,n);},
       orderBy:function(){return api;},where:function(){return api;},
-      get:function(){return q().get().then(list);},
-      onSnapshot:function(next,err){var qq=q(),h=function(s){next(list(s));};qq.on("value",h,function(e){err&&err(e);});return function(){qq.off("value",h);};}};
+      get:function(){return after(function(){return q().get().then(list);});},
+      onSnapshot:function(next,err){return listen(q(),function(s){next(list(s));},err);}};
     return api;}
-  window.HC_DB={doc:docRef,collection:function(p){return colRef(p,0);}};
+  // remove rooms nobody has touched for a day (any signed-in player may do this; the rules allow only old rooms)
+  function cleanupRooms(){return after(function(){try{
+    var cutoff=Date.now()-24*3600*1000;
+    return rtdb.ref("rooms").orderByChild("created").endAt(cutoff).limitToFirst(25).get().then(function(s){
+      var jobs=[];s.forEach(function(c){var v=c.val()||{};if((v.created||0)<cutoff&&(v.turnAt||0)<cutoff)jobs.push(c.ref.remove().catch(function(){}));});return Promise.all(jobs);
+    }).catch(function(){});}catch(e){return null;}}).catch(function(){});}
+  window.HC_DB={doc:docRef,collection:function(p){return colRef(p,0);},
+    uid:function(){return after(function(){return uid;});},cleanupRooms:cleanupRooms};
 })();
 
 window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.HC_INSTALL=e;window.dispatchEvent(new Event("hc-install"));});
@@ -1877,6 +1897,8 @@ function installTip(){
   return "";}
 window.addEventListener("hc-install",()=>{if(!overlay.hidden&&menuTab==="play"&&card.querySelector(".tabs")){startScreen.save();startScreen();}});
 const SITE_LINK=location.origin+location.pathname;
+async function dailyId(d){return (d&&d.uid&&await d.uid())||deviceId();}
+setTimeout(()=>{getDB().then(d=>{if(d&&d.cleanupRooms)d.cleanupRooms();});},4000);
 function deviceId(){let d=null;try{d=localStorage.getItem("hidden-city-did");}catch(e){}if(!d){d="d"+Math.random().toString(36).slice(2,10);try{localStorage.setItem("hidden-city-did",d);}catch(e){}}return d;}
 
 /* ---------- Online rooms: each phone writes only its own part of one shared room record ---------- */
@@ -1901,8 +1923,9 @@ const Online=(()=>{
     O.cid=myCid();let code=code4();
     for(let t=0;t<5;t++){const s=await d.doc("rooms/"+code).get().catch(()=>null);if(!s||!s.exists)break;code=code4();}
     O.code=code;O.ref=d.doc("rooms/"+code);
+    const uid=d.uid?await d.uid():null;
     try{await O.ref.set({code,created:Date.now(),status:"lobby",set:{diff:SETTINGS.diff,timer:SETTINGS.timer,limit:SETTINGS.limit},turn:0,turnAt:0,lastChance:false,finder:null,gaveUp:null,
-      p:{"0":{cid:O.cid,name,g:[],miss:0,sec:null}}});}
+      p:{"0":{cid:O.cid,uid,name,g:[],miss:0,sec:null}}});}
     catch(e){return err("Couldn't create a room. You may need edit access to this game, or your connection dropped.");}
     saveRoom();listen();
   };
@@ -1920,7 +1943,8 @@ const Online=(()=>{
     if(p["1"])return err(`Room ${code} already has two players.`);
     if(r.status!=="lobby")return err(`Room ${code} has already started.`);
     const nm=p["0"]&&pkey(name)===pkey(p["0"].name)?name+" 2":name;
-    try{await O.ref.update({status:"hiding",p:{"1":{cid:O.cid,name:nm,g:[],miss:0,sec:null}}});}
+    const uid=d.uid?await d.uid():null;
+    try{await O.ref.update({status:"hiding",p:{"1":{cid:O.cid,uid,name:nm,g:[],miss:0,sec:null}}});}
     catch(e){return err("Couldn't join. You need edit access to this game: ask your friend to share it with you from the Share menu.");}
     saveRoom();listen();
   };
@@ -2112,7 +2136,7 @@ const Daily={
     const rec={found:a.found,guesses:a.guesses.length,gaveUp:S.gaveUp!=null,bands:a.guesses.map(g=>BANDS.indexOf(g.band)),name:a.name};
     this.save(k,rec);drawSecrets([city]);flyTo(city,3);
     const d=await getDB();let shared=false;
-    if(d){try{await d.doc(`daily/${k}/results/${deviceId()}`).set({name:a.name,guesses:rec.guesses,found:rec.found,at:Date.now()});shared=true;}catch(e){}}
+    if(d){try{await d.doc(`daily/${k}/results/${await dailyId(d)}`).set({name:a.name,guesses:rec.guesses,found:rec.found,at:Date.now()});shared=true;}catch(e){}}
     setTimeout(()=>this.results(true,shared),800);
   },
   async results(justPlayed,shared){
@@ -2136,7 +2160,7 @@ const Daily={
     if(!d){list.innerHTML=`<p class="small">The shared leaderboard isn't available here.</p>`;return;}
     try{
       const snap=await d.collection(`daily/${k}/results`).limit(500).get();
-      const me=deviceId();
+      const me=await dailyId(d);
       const rows=snap.docs.map(x=>({id:x.id,...(x.data()||{})})).filter(x=>x.name)
         .sort((a,b)=>(b.found?1:0)-(a.found?1:0)||(a.guesses-b.guesses)||((a.at||0)-(b.at||0)));
       if(!list.isConnected)return;
