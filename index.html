@@ -2,6 +2,53 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Hidden City: a hide-and-seek geography game. Hide in a city, then hunt for your opponent's with hot and cold clues.">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* Hidden City: shared storage on Firebase Realtime Database.
+   Gives the game the same small storage interface it uses inside Claude. */
+(function(){
+  if(!window.firebase||!firebase.initializeApp)return;
+  var app=firebase.initializeApp({
+    apiKey:"AIzaSyAC4I9A2bcfOPwkrum4GuPPEG-2wKgd09I",
+    authDomain:"hiddencity-1be83.firebaseapp.com",
+    databaseURL:"https://hiddencity-1be83-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:"hiddencity-1be83",
+    storageBucket:"hiddencity-1be83.firebasestorage.app",
+    messagingSenderId:"339466940691",
+    appId:"1:339466940691:web:85deb1a6bbc5298580aae6"
+  });
+  var rtdb=firebase.database(app);
+  // daily results live directly under daily/<date>
+  function mapPath(p){return String(p).replace(/^daily\/([^/]+)\/results(\/|$)/,"daily/$1$2").replace(/\/$/,"");}
+  function isPlain(v){return v&&typeof v==="object"&&!Array.isArray(v);}
+  // Realtime Database replaces whole children on update, so nested changes are flattened into paths
+  function flatten(obj,prefix,out){out=out||{};for(var k in obj){var v=obj[k],key=prefix?prefix+"/"+k:k;
+      if(isPlain(v)&&Object.keys(v).length)flatten(v,key,out);else out[key]=(v===undefined?null:v);}return out;}
+  function snap(s){var v=s.val();return {id:s.key,exists:v!==null&&v!==undefined,data:function(){return v===null?undefined:JSON.parse(JSON.stringify(v));},metadata:{fromCache:false,hasPendingWrites:false}};}
+  function docRef(path){var ref=rtdb.ref(mapPath(path));
+    return {id:ref.key,path:path,
+      get:function(){return ref.get().then(snap);},
+      set:function(d){return ref.set(JSON.parse(JSON.stringify(d)));},
+      update:function(d){return ref.update(flatten(d,"",{}));},
+      delete:function(){return ref.remove();},
+      acquire:function(){return Promise.resolve({acquired:true});},
+      release:function(){return Promise.resolve();},
+      onSnapshot:function(next,err){var h=function(s){next(snap(s));};ref.on("value",h,function(e){err&&err(e);});return function(){ref.off("value",h);};}};}
+  function colRef(path,lim){var ref=rtdb.ref(mapPath(path));
+    function q(){return lim?ref.limitToLast(lim):ref;}
+    function list(s){var docs=[];s.forEach(function(c){docs.push(snap(c));});return {docs:docs,size:docs.length,empty:!docs.length,docChanges:function(){return [];},metadata:{fromCache:false}};}
+    var api={path:path,
+      doc:function(id){return docRef(path+"/"+(id||ref.push().key));},
+      add:function(d){var r=ref.push();return r.set(JSON.parse(JSON.stringify(d))).then(function(){return docRef(path+"/"+r.key);});},
+      limit:function(n){return colRef(path,n);},
+      orderBy:function(){return api;},where:function(){return api;},
+      get:function(){return q().get().then(list);},
+      onSnapshot:function(next,err){var qq=q(),h=function(s){next(list(s));};qq.on("value",h,function(e){err&&err(e);});return function(){qq.off("value",h);};}};
+    return api;}
+  window.HC_DB={doc:docRef,collection:function(p){return colRef(p,0);}};
+})();
+</script>
 </head><body>
 <title>Hidden City</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1513,7 +1560,7 @@ const store={games:[],mode:"local",listeners:[],db:null,
 store.games=store.loadLocal();
 (async()=>{
   try{
-    const db=window.claude&&window.claude.use?await window.claude.use("db"):null;
+    const db=await getDB();
     if(!db)return;
     store.db=db;
     db.collection("games").onSnapshot(snap=>{
@@ -1609,7 +1656,7 @@ function startScreen(){
       ${saved?`<button class="btn wide" id="orejoin">Rejoin room ${esc(saved.code)}</button>`:""}
       <button class="btn ${saved?"ghost ":""}wide" id="ocreate">Create a room</button>
       <div class="joinrow"><input class="city" id="ocode" placeholder="Room code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="btn ghost" id="ojoin">Join</button></div>
-      <p class="small">Each player uses their own phone. The room's creator picks the settings. Your friend needs edit access to this game, shared from the Share menu at the top.</p>`;
+      <p class="small">Each player uses their own phone. The room's creator picks the settings. ${ON_SITE?`Send your friend the link to this game so they can join.`:`Your friend needs edit access to this game, shared from the Share menu at the top.`}</p>`;
     else action=`${nameField}<div class="dailybox"><div><strong>${streak}</strong><small>day streak</small></div><p>${dh?(dh.found?`You found today's city in ${dh.guesses} guess${dh.guesses===1?"":"es"}.`:"You didn't find today's city.")+" A new one appears at midnight UTC.":"Everyone gets the same hidden city today. Find it in as few guesses as you can."}</p></div>
       <button class="btn wide" id="dgo">${dh?"See today's results":"Play today's city"}</button>`;
     body=`<p>Hide in a city, then hunt for your opponent's. Every guess shows how hot or cold you are, and the clues get sharper the closer you get.</p>
@@ -1758,7 +1805,9 @@ async function endGame(){
   },soloLike()?900:600);
 }
 /* ---------- Shared storage access ---------- */
-async function getDB(){try{return window.claude&&window.claude.use?await window.claude.use("db"):null;}catch(e){return null;}}
+async function getDB(){try{if(window.claude&&window.claude.use)return await window.claude.use("db");return window.HC_DB||null;}catch(e){return null;}}
+const ON_SITE=!window.claude;
+const SITE_LINK=location.origin+location.pathname;
 function deviceId(){let d=null;try{d=localStorage.getItem("hidden-city-did");}catch(e){}if(!d){d="d"+Math.random().toString(36).slice(2,10);try{localStorage.setItem("hidden-city-did",d);}catch(e){}}return d;}
 
 /* ---------- Online rooms: each phone writes only its own part of one shared room record ---------- */
@@ -1853,7 +1902,7 @@ const Online=(()=>{
     O.screen="lobby";
     show(`<div class="eyebrow">Online room</div><h2>Share this code with your friend</h2>
       <div class="roomcode" id="rcode">${d.code}</div>
-      <p>They open Hidden City on their phone, pick <strong>Online</strong> and type the code. They need edit access to this game, shared from the Share menu at the top.</p>
+      <p>They open Hidden City on their phone, pick <strong>Online</strong> and type the code. ${ON_SITE?`If they don't have the game yet, send them this link: <strong>${esc(SITE_LINK)}</strong>`:`They need edit access to this game, shared from the Share menu at the top.`}</p>
       <p class="small">${settingsSummary(d.set)}</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="rcopy">Copy code</button><button class="btn ghost" id="rcancel">Cancel</button></div>
       <p class="waiting"><span class="pulse"></span>Waiting for your friend to join…</p>`);
@@ -1971,7 +2020,7 @@ const Daily={
       <div class="dstats"><div><strong>${streak}</strong><small>day streak</small></div><div><strong>${days}</strong><small>days played</small></div><div><strong>${wins}</strong><small>cities found</small></div></div>
       <div class="sharebox"><pre id="shtxt">${esc(share)}</pre><button class="btn ghost" id="shcopy">Copy</button></div>
       <h3>Today's leaderboard</h3><div class="dlist" id="dlist"><p class="small">Loading…</p></div>
-      ${justPlayed&&shared===false?`<p class="small">Your result is saved on this device only. The shared leaderboard needs edit access to this game.</p>`:""}
+      ${justPlayed&&shared===false?`<p class="small">Your result is saved on this device only. ${ON_SITE?"The shared leaderboard couldn't be reached.":"The shared leaderboard needs edit access to this game."}</p>`:""}
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="dback">Back to menu</button>${justPlayed?`<button class="btn ghost" id="dlook">Look at the map</button>`:""}</div>`);
     $("shcopy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(share);$("shcopy").textContent="Copied";}catch(e){const rg=document.createRange();rg.selectNodeContents($("shtxt"));const sel=getSelection();sel.removeAllRanges();sel.addRange(rg);$("shcopy").textContent="Selected";}});
     $("dback").addEventListener("click",()=>{resetBoard();menuTab="play";startScreen();});
