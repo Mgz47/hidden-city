@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-window.HC_VERSION="2026-11-10 11:59";
+window.HC_VERSION="2026-11-10 12:00";
 /* Hidden City: shared storage on Firebase Realtime Database.
    Gives the game the same small storage interface it uses inside Claude.
    Each device signs in anonymously, so the database rules can tell players apart. */
@@ -484,7 +484,10 @@ table.lb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
   .banner b{font-size:22px;}
   .overlay{align-items:start;padding-top:calc(16px + env(safe-area-inset-top,0px));}
 }@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
-.crown{width:1em;height:1em;vertical-align:-.12em;margin-left:.3em;flex:none;filter:drop-shadow(0 0 3px rgba(245,197,66,.45))}
+.crown{position:relative;display:inline-block;width:1em;height:1em;vertical-align:-.12em;margin-left:.3em;flex:none;cursor:help;outline:none}
+.crown svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 3px rgba(245,197,66,.45))}
+.crown::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%) translateY(3px);white-space:nowrap;background:#0b1424;color:#f5d77a;border:1px solid rgba(245,197,66,.55);border-radius:8px;padding:4px 8px;font:600 12px/1.2 system-ui,sans-serif;letter-spacing:0;text-transform:none;box-shadow:0 6px 18px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .12s,transform .12s;z-index:30}
+.crown:hover::after,.crown:focus::after{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 
 <div class="app">
@@ -1175,7 +1178,7 @@ function distText(d,b){return d<1?"0 km":`${fmt(Math.round(d))} km away`;}
 
 /* ---------- Hints ---------- */
 const TIERS=["Far · any guess","Narrowing · within 3,000 km","Country · within 1,000 km","Close · within 300 km"];
-const capMark=c=>CAPITALS.has(c.name)?`<svg class="crown" viewBox="0 0 24 24" role="img" aria-label="capital"><title>Capital</title><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" fill="#f5c542" stroke="#a87b00" stroke-width="1.2" stroke-linejoin="round"/></svg>`:"";
+const capMark=c=>CAPITALS.has(c.name)?`<span class="crown" tabindex="0" role="img" aria-label="Crown: this city is a national capital" data-tip="Crown = national capital"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" fill="#f5c542" stroke="#a87b00" stroke-width="1.2" stroke-linejoin="round"/></svg></span>`:"";
 const CAPITALS=new Set(["Saint John's","Belmopan","Porto-Novo","Bandar Seri Begawan","Gitega","Yaoundé","Praia","Bangui","N'Djamena","Moroni","Nicosia","Roseau","Dili","Malabo","Palikir","Libreville","Saint George's","Conakry","Bissau","Yamoussoukro","Tarawa","Pristina","Maseru","Monrovia","Lilongwe","Majuro","Nouakchott","Rabat","Naypyidaw","Niamey","Ngerulmud","Basseterre","Castries","Kingstown","São Tomé","Honiara","Mogadishu","Bloemfontein","Banjul","Lomé","Nuku'alofa","Funafuti","Port Vila","Mbabane","Dodoma","Juba","Yaren","Vatican City","London","Paris","Berlin","Madrid","Rome","Vienna","Prague","Budapest","Warsaw","Amsterdam","Brussels","Lisbon","Dublin","Stockholm","Oslo","Copenhagen","Helsinki","Reykjavík","Athens","Moscow","Kyiv","Bucharest","Belgrade","Zagreb","Cairo","Nairobi","Addis Ababa","Dakar","Accra","Kinshasa","Tunis","Algiers","Khartoum","Antananarivo","Tokyo","Seoul","Beijing","Taipei","Bangkok","Hanoi","Singapore","Kuala Lumpur","Jakarta","Manila","Delhi","Kathmandu","Dhaka","Tehran","Riyadh","Baghdad","Tashkent","Ulaanbaatar","Canberra","Wellington","Washington","Ottawa","Mexico City","Havana","Panama City","Guatemala City","Brasília","Buenos Aires","Santiago","Lima","Bogotá","Quito","Caracas","La Paz","Sucre","Montevideo","Ljubljana","Sarajevo","Podgorica","Bratislava","Tirana","Sofia","Monaco","Valletta","Tallinn","Riga","Vilnius","Doha","Muscat","Amman","Beirut","Abu Dhabi","Baku","Tbilisi","Yerevan","Kabul","Thimphu","Islamabad","Malé","Phnom Penh","Vientiane","Abuja","Kampala","Kigali","Windhoek","Harare","Maputo","Port Louis","Luanda","San José","Kingston","Santo Domingo","Nassau","Asunción","Georgetown","Suva","Skopje","Chișinău","Minsk","Luxembourg","Andorra la Vella","San Marino","Vaduz","Bern","Tripoli","Bamako","Ouagadougou","Freetown","Brazzaville","Lusaka","Gaborone","Djibouti","Asmara","Victoria","Pyongyang","Manama","Kuwait City","Sana'a","Damascus","Dushanbe","Bishkek","Astana","Ashgabat","Port Moresby","Apia","Tegucigalpa","San Salvador","Managua","Port-au-Prince","Bridgetown","Port of Spain","Paramaribo","Pretoria","Cape Town","Ankara"]);
 const SUBCAPS=new Set(["Edinburgh","Cardiff","Belfast","Nuuk","Papeete","Nouméa","Hamilton","Cayenne","Saint-Denis","San Juan","Willemstad","Tórshavn","Gibraltar"]);
 // Encyclopedia-style themes, kept deliberately broad so they narrow things down without giving the place away.
