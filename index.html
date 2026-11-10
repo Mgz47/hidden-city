@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-window.HC_VERSION="2026-11-10 12:21";
+window.HC_VERSION="2026-11-10 12:27";
 /* Hidden City: shared storage on Firebase Realtime Database.
    Gives the game the same small storage interface it uses inside Claude.
    Each device signs in anonymously, so the database rules can tell players apart. */
@@ -582,6 +582,13 @@ table.lb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
   .hudturn{font-size:9px;letter-spacing:.1em;}
   .hudbig,.tleft{font-size:13px;}
   .overlay .card{border-radius:20px;}
+  /* keyboard up: only the map, the HUD and the guess box stay on screen */
+  .pfoot{transition:bottom .16s ease-out;}
+  .panel{transition:max-height .25s ease,transform .2s ease,opacity .15s ease;}
+  .kbopen .panel{opacity:0;pointer-events:none;transform:translateY(24px);}
+  .kbopen .pfoot{padding-bottom:6px;box-shadow:0 -10px 30px rgba(0,0,0,.45);}
+  .kbopen .pfoot .msg:empty{display:none;}
+  .kbopen .sugg button:nth-child(n+5){display:none;}
 }
 .crown{position:relative;display:inline-block;width:1em;height:1em;vertical-align:-.12em;margin-left:.3em;flex:none;cursor:help;outline:none}
 .crown svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 3px rgba(245,197,66,.45))}
@@ -613,7 +620,7 @@ table.lb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
     <div class="pfoot guessbar">
       <div class="guessrow">
         <div class="field">
-          <input class="city" id="guess" placeholder="Guess a city…" autocomplete="off" spellcheck="false">
+          <input class="city" id="guess" placeholder="Guess a city…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="go" inputmode="text">
           <div class="sugg" id="gsugg" hidden></div>
         </div>
         <button class="btn" id="guessBtn">Guess</button>
@@ -1617,7 +1624,9 @@ function switchTurn(){
 }
 function resetBoard(){SHOWN.clear();sizeAll();gGuess.selectAll("*").remove();gArrows.selectAll("*").remove();gSecret.selectAll("*").remove();}
 $("peek").addEventListener("click",()=>{const p=seeker();p.peek=!p.peek;renderPanel();});
-function pickFromMap(c){if(gInput.disabled)return;gInput.value=c.name;gInput.focus();$("gmsg").textContent=`${c.name}, ${c.country} — press Guess`;$("gmsg").className="msg";}
+const isPhone=()=>!window.matchMedia("(min-width:761px)").matches;
+const focusGuess=()=>{if(isPhone())gInput.blur();else gInput.focus();};
+function pickFromMap(c){if(gInput.disabled)return;gInput.value=c.name;if(!isPhone())gInput.focus();$("gmsg").textContent=`${c.name}, ${c.country} — press Guess`;$("gmsg").className="msg";}
 
 const GIVEUP_AFTER=10;
 function updateGiveUp(){const b=$("giveUp");if(!b||!S)return;const p=S.race?S.players[S.mode==="online"?S.view:S.turn]:seeker();
@@ -1713,6 +1722,7 @@ function doGuess(){
   if(!inPool(c,guessDiff())){const dn=DIFFS[guessDiff()].name;msg.textContent=guessDiff()==="easy"?`${c.name} isn't a capital. On ${dn} you can only guess capitals.`:`${c.name} isn't one of the ${dn} cities. Pick one from the suggestions.`;msg.className="msg err";return;}
   const p=seeker();
   if(p.guesses.some(g=>g.city.id===c.id)){msg.textContent=`You already guessed ${c.name}.`;msg.className="msg err";return;}
+  if(isPhone())gInput.blur(); // put the keyboard away so the result is visible
   if(S.mode==="online")return Online.guess(c);
   stopTurnTimer();
   if(S.race){
@@ -1724,7 +1734,7 @@ function doGuess(){
     flyTo(c,Math.max(3,Math.min(K*1.6,5)));
     const q=S.players[1-S.turn];
     if(exhausted(who)&&exhausted(q))return endGame();
-    if(exhausted(q)){msg.textContent=`${q.name} is out of guesses. Keep going.`;startLocalTimer();gInput.focus();return;}
+    if(exhausted(q)){msg.textContent=`${q.name} is out of guesses. Keep going.`;startLocalTimer();focusGuess();return;}
     setTurnLocked(true);queueSwitch();return;
   }
   const tgt=targetOf(S.players.indexOf(p));
@@ -1735,11 +1745,11 @@ function doGuess(){
   buzz(d);
   if(d===0)return onFound();
   flyTo(c,Math.max(3,Math.min(K*1.6,5)));
-  if(soloLike()){if(exhausted(p))return endGame();gInput.focus();return;}
+  if(soloLike()){if(exhausted(p))return endGame();focusGuess();return;}
   if(S.lastChance)return endGame();
   const q=S.players[1-S.turn];
   if(exhausted(p)&&exhausted(q))return endGame();
-  if(exhausted(q)){msg.textContent=`${q.name} is out of guesses. Keep going.`;startLocalTimer();gInput.focus();return;}
+  if(exhausted(q)){msg.textContent=`${q.name} is out of guesses. Keep going.`;startLocalTimer();focusGuess();return;}
   setTurnLocked(true);queueSwitch();
 }
 let tTimer=0;
@@ -2634,7 +2644,7 @@ document.querySelectorAll(".viewbtn").forEach(b=>b.addEventListener("click",()=>
   const ro=new ResizeObserver(()=>{requestAnimationFrame(layout);});ro.observe(bar);ro.observe(panel);
   mq.addEventListener("change",layout);
   // keep the guess bar above the on-screen keyboard
-  if(window.visualViewport){const vv=window.visualViewport;const kb=()=>{const h=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);root.style.setProperty("--kb",(mq.matches?h:0)+"px");};vv.addEventListener("resize",kb);vv.addEventListener("scroll",kb);}
+  if(window.visualViewport){const vv=window.visualViewport;const kb=()=>{const h=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);root.style.setProperty("--kb",(mq.matches?h:0)+"px");root.classList.toggle("kbopen",mq.matches&&h>80);};vv.addEventListener("resize",kb);vv.addEventListener("scroll",kb);}
   // refresh the sheet label after each render
   const _rp=renderPanel;renderPanel=function(h){_rp(h);if(!panel.classList.contains("open"))setOpen(false);else setOpen(true);};
   // close the sheet when a guess is typed so the map is visible
