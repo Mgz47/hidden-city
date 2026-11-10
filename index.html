@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-window.HC_VERSION="2026-11-10 12:00";
+window.HC_VERSION="2026-11-10 12:13";
 /* Hidden City: shared storage on Firebase Realtime Database.
    Gives the game the same small storage interface it uses inside Claude.
    Each device signs in anonymously, so the database rules can tell players apart. */
@@ -484,6 +484,105 @@ table.lb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
   .banner b{font-size:22px;}
   .overlay{align-items:start;padding-top:calc(16px + env(safe-area-inset-top,0px));}
 }@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+
+/* ===== v2 look: one starry navy style, HUD, clue cards ===== */
+.overlay,.overlay.menu{--ink:#eef2fb;--muted:#a3b2cd;--faint:#6f809e;--line:rgba(170,195,255,.14);--panel:#0c1630;--panel-2:rgba(255,255,255,.045);--ocean:#060d20;--land:#1a2c52;--accent:#ffb547;--accent-ink:#1a1206;
+  background:radial-gradient(120% 55% at 50% 110%,rgba(78,128,230,.30),transparent 62%),linear-gradient(180deg,#040814 0%,#091330 48%,#12284f 100%);-webkit-backdrop-filter:none;backdrop-filter:none;color:var(--ink);color-scheme:dark;}
+.overlay #stars{opacity:.6;animation:starsDrift 90s ease-in-out infinite alternate;}
+.overlay .card,.overlay.menu .card{position:relative;z-index:1;border-radius:22px;background:linear-gradient(180deg,rgba(18,29,60,.74),rgba(8,14,32,.74));border:1px solid rgba(170,195,255,.14);
+  box-shadow:0 30px 80px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);}
+.overlay.menu .card.home{background:transparent;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;}
+.overlay .card h2{letter-spacing:-.015em;}
+.overlay .card .eyebrow{letter-spacing:.2em;font-size:11px;color:#ffc978;}
+.overlay .btn,.mmbtn.primary{background:linear-gradient(180deg,#ffc971,#ffaa30);color:#1a1206;border:none;border-radius:13px;box-shadow:0 10px 26px rgba(255,170,48,.22),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .12s ease,filter .12s ease;}
+.overlay .btn:hover:not(:disabled),.mmbtn.primary:hover{filter:brightness(1.07);background:linear-gradient(180deg,#ffc971,#ffaa30);}
+.overlay .btn:active:not(:disabled){transform:scale(.985);}
+.overlay .btn.ghost{background:rgba(255,255,255,.045);color:var(--ink);border:1px solid rgba(170,195,255,.2);box-shadow:none;}
+.overlay .btn.ghost:hover:not(:disabled){background:rgba(255,255,255,.08);filter:none;}
+.mmtitle{letter-spacing:-.035em!important;background:linear-gradient(180deg,#ffffff 25%,#b7c9f2);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding-bottom:.06em;}
+.mmhome{gap:14px;}
+.mmhome .eyebrow{color:var(--muted)!important;letter-spacing:.24em!important;}
+.mmlogo{width:100px;height:100px;filter:drop-shadow(0 14px 40px rgba(90,150,255,.35));}
+.mmbtns{gap:10px;max-width:300px;margin-top:10px;}
+.mmbtn{padding:15px 18px;border-radius:15px;font-size:19px;font-weight:700;border:1px solid rgba(170,195,255,.18);background:rgba(255,255,255,.04);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+.mmlinks button{font-size:13px;letter-spacing:.02em;}
+.back{padding:7px 14px 7px 11px;background:rgba(255,255,255,.045);border-color:rgba(170,195,255,.18);}
+.bigmode,.overlay .mode{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid rgba(170,195,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .15s ease,background .15s ease,transform .15s ease;}
+.overlay .mode:hover{border-color:rgba(170,195,255,.32);}
+.overlay .mode[aria-pressed="true"]{border-color:rgba(255,181,71,.75);background:linear-gradient(180deg,rgba(255,181,71,.13),rgba(255,181,71,.04));box-shadow:inset 0 0 0 1px rgba(255,181,71,.35);}
+.overlay .seg{background:rgba(4,9,22,.55);border:1px solid var(--line);border-radius:12px;padding:4px;}
+.overlay .seg button{border-radius:9px;font-size:13.5px;transition:background .15s ease,color .15s ease;}
+.overlay .seg button[aria-pressed="true"]{background:rgba(255,181,71,.16);color:#ffd590;box-shadow:inset 0 0 0 1px rgba(255,181,71,.55);}
+.overlay input.city,.overlay select{background:rgba(4,9,22,.55);border:1px solid rgba(170,195,255,.16);border-radius:12px;transition:border-color .15s ease;}
+.overlay input.city:focus,.overlay select:focus{border-color:rgba(255,181,71,.7);outline:none;}
+.overlay .setbox,.overlay .dailybox,.overlay .reveal div,.overlay .dstats div,.overlay .series,.overlay .ach{background:rgba(255,255,255,.035);border-color:rgba(170,195,255,.12);border-radius:14px;}
+.overlay .setbox{padding:12px;gap:10px;}
+.overlay .lb th{background:#0c1630;}
+.overlay .howto{border-top:1px solid var(--line);padding-top:12px;}
+/* in-game chrome picks up the same navy */
+:root:not([data-mt="light"]) .panel,:root:not([data-mt="light"]) .pfoot,:root:not([data-mt="light"]) .themes,:root:not([data-mt="light"]) .bgpop,:root:not([data-mt="light"]) .mapctl,:root:not([data-mt="light"]) .legend,:root:not([data-mt="light"]) .banner{--panel:#0a1328;--panel-2:#111e3d;--line:#22335a;--ocean:#060d20;--muted:#a3b2cd;--faint:#6f809e;}
+.panel{background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 86%,#1b3a78));}
+.score{display:none!important;}
+/* map style popover (opened from the layers button) */
+.themes{left:auto;right:calc(56px + env(safe-area-inset-right,0px));top:12px;z-index:8;max-width:calc(100% - 70px);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.4);}
+.bgpop{left:auto;right:calc(56px + env(safe-area-inset-right,0px));top:60px;}
+#styleBtn{display:grid;place-items:center;}
+#styleBtn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);}
+.mapctl button{border-radius:10px;}
+.legend{top:auto;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:calc(50% - 170px);}
+@media (max-width:1180px){.legend{display:none;}}
+/* HUD */
+.hud{--ink:#eef2fb;--muted:#a3b2cd;--line:rgba(170,195,255,.16);position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:stretch;max-width:calc(100% - 130px);
+  color:var(--ink);background:rgba(8,14,32,.82);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);overflow:hidden;pointer-events:none;}
+.hudp{display:flex;align-items:center;gap:10px;padding:8px 14px;min-width:0;position:relative;transition:background .25s ease;}
+.hudp:empty{display:none;}
+.hudp>div{min-width:0;display:flex;flex-direction:column;line-height:1.2;}
+.hudp b{font-family:var(--display);font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;}
+.hudp small{font-size:11px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums;}
+.hudp em{font-style:normal;font-family:var(--display);font-weight:800;font-size:22px;line-height:1;color:var(--muted);margin-left:2px;}
+.hdot{width:9px;height:9px;border-radius:50%;flex:none;}
+.hudp.on{background:color-mix(in srgb,var(--pc) 14%,transparent);}
+.hudp.on::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:2px;border-radius:2px;background:var(--pc);box-shadow:0 0 12px var(--pc);}
+.hudp.on em{color:var(--ink);}
+.hudp.on .hdot{box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 30%,transparent);}
+#hudB{flex-direction:row-reverse;text-align:right;}
+#hudB>div{align-items:flex-end;}
+.hudmid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:6px 14px;min-width:78px;border-left:1px solid var(--line);border-right:1px solid var(--line);}
+.hud.solo .hudmid{border-right:none;align-items:flex-end;}
+.hudturn{font-family:var(--display);font-weight:700;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.hudbig{font-family:var(--mono);font-size:15px;font-weight:700;white-space:nowrap;}
+.hudbig:empty{display:none;}
+.tleft{position:static;background:none;border:none;box-shadow:none;padding:0;font-family:var(--mono);font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums;}
+.tleft.low{background:none;border:none;color:var(--burning);animation:pulse 1s ease-in-out infinite;}
+/* clue cards */
+.cluegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;grid-auto-flow:dense;}
+.clue{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:9px 11px;display:flex;flex-direction:column;gap:3px;min-width:0;}
+.clue.wide{grid-column:1/-1;}
+.clue b{font-family:var(--display);font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.clue span{font-size:14px;line-height:1.35;overflow-wrap:anywhere;}
+.clue.new{border-color:var(--accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent),0 0 22px color-mix(in srgb,var(--accent) 18%,transparent);animation:clueIn .45s cubic-bezier(.2,.8,.2,1);}
+@keyframes clueIn{from{opacity:0;transform:translateY(6px) scale(.97);}to{opacity:1;transform:none;}}
+.clueempty{margin:0;font-size:13px;color:var(--faint);}
+.cluelock{margin-top:10px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);}
+.cluelock strong{color:var(--ink);font-weight:600;}
+.cbar{height:4px;border-radius:999px;background:var(--line);overflow:hidden;}
+.cbar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--cool),var(--accent));transition:width .4s ease;}
+@media (max-width:760px){
+  .themes{left:auto;right:calc(58px + env(safe-area-inset-right,0px));top:10px;max-width:calc(100% - 68px);}
+  .bgpop{left:auto;right:10px;top:62px;}
+  .hud{left:calc(10px + env(safe-area-inset-left,0px));right:calc(58px + env(safe-area-inset-right,0px));transform:none;max-width:none;top:10px;border-radius:14px;}
+  .hudp{flex:1;padding:7px 10px;gap:7px;}
+  .hudp b{font-size:13px;max-width:none;}
+  .hudp small{font-size:10px;}
+  .hbest{display:none;}
+  .hudp>div{flex:1;}
+  .hudp b,.hudp small{overflow:hidden;text-overflow:ellipsis;}
+  .hudp em{font-size:18px;}
+  .hudmid{min-width:58px;padding:5px 8px;}
+  .hudturn{font-size:9px;letter-spacing:.1em;}
+  .hudbig,.tleft{font-size:13px;}
+  .overlay .card{border-radius:20px;}
+}
 .crown{position:relative;display:inline-block;width:1em;height:1em;vertical-align:-.12em;margin-left:.3em;flex:none;cursor:help;outline:none}
 .crown svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 3px rgba(245,197,66,.45))}
 .crown::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%) translateY(3px);white-space:nowrap;background:#0b1424;color:#f5d77a;border:1px solid rgba(245,197,66,.55);border-radius:8px;padding:4px 8px;font:600 12px/1.2 system-ui,sans-serif;letter-spacing:0;text-transform:none;box-shadow:0 6px 18px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .12s,transform .12s;z-index:30}
@@ -494,13 +593,14 @@ table.lb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
   <div class="mapwrap">
     <svg id="map" role="img" aria-label="World map"></svg>
     <div id="globeWrap" hidden><canvas id="globeCanvas"></canvas><svg id="globe" role="img" aria-label="Globe"></svg></div>
-    <div class="themes" role="group" aria-label="Map style"><button data-mt="dark">Dark</button><button data-mt="light">Light</button><button data-mt="sat">Cartoon</button><button data-mt="real">Satellite</button><span class="tsep"></span><button id="bgBtn" aria-haspopup="true" aria-expanded="false"><i class="bgdot" id="bgDot"></i>Background</button></div>
+    <div class="themes" id="themes" role="group" aria-label="Map style" hidden><button data-mt="dark">Dark</button><button data-mt="light">Light</button><button data-mt="sat">Cartoon</button><button data-mt="real">Satellite</button><span class="tsep"></span><button id="bgBtn" aria-haspopup="true" aria-expanded="false"><i class="bgdot" id="bgDot"></i>Background</button></div>
     <div class="bgpop" id="bgPop" hidden>
       <div class="bgtitle">Map background</div>
       <div class="bgsw" id="bgSw"></div>
       <label class="bgcustom" for="bgColor">Custom colour <input type="color" id="bgColor" value="#1b2a4a"></label>
     </div>
     <div class="mapctl">
+      <button id="styleBtn" aria-label="Map style" aria-haspopup="true" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
       <button id="zin" aria-label="Zoom in">+</button>
       <button id="zout" aria-label="Zoom out">−</button>
       <button id="zreset" aria-label="Reset view">⟲</button>
@@ -508,9 +608,9 @@ table.lb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
       <button class="viewbtn" data-view="flat" aria-label="Flat map">2D</button>
       <button class="viewbtn" data-view="globe" aria-label="Globe">3D</button>
     </div>
-    <div class="legend" id="legend"></div>
+<div class="legend" id="legend"></div>
+    <div class="hud" id="hud" hidden><div class="hudp" id="hudA"></div><div class="hudmid"><span class="hudturn" id="hudTurn"></span><b class="hudbig" id="hudBig"></b><span class="tleft" id="tleft" hidden></span></div><div class="hudp" id="hudB"></div></div>
     <div class="pfoot guessbar">
-      <span class="tleft" id="tleft" hidden></span>
       <div class="guessrow">
         <div class="field">
           <input class="city" id="guess" placeholder="Guess a city…" autocomplete="off" spellcheck="false">
@@ -1369,7 +1469,9 @@ byId("bgSw").addEventListener("click",e=>{const b=e.target.closest("button");if(
 byId("bgColor").addEventListener("input",e=>applyBackdrop("custom",e.target.value));
 byId("bgBtn").addEventListener("click",e=>{e.stopPropagation();const p=byId("bgPop");p.hidden=!p.hidden;byId("bgBtn").setAttribute("aria-expanded",String(!p.hidden));});
 document.addEventListener("click",e=>{const p=byId("bgPop");if(!p.hidden&&!p.contains(e.target)&&e.target!==byId("bgBtn")){p.hidden=true;byId("bgBtn").setAttribute("aria-expanded","false");}});
-document.addEventListener("keydown",e=>{if(e.key==="Escape")byId("bgPop").hidden=true;});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){byId("bgPop").hidden=true;byId("themes").hidden=true;byId("styleBtn").setAttribute("aria-expanded","false");}});
+byId("styleBtn").addEventListener("click",e=>{e.stopPropagation();const t=byId("themes");t.hidden=!t.hidden;if(t.hidden)byId("bgPop").hidden=true;byId("styleBtn").setAttribute("aria-expanded",String(!t.hidden));});
+document.addEventListener("click",e=>{const t=byId("themes");if(!t.hidden&&!t.contains(e.target)&&!byId("bgPop").contains(e.target)&&!byId("styleBtn").contains(e.target)){t.hidden=true;byId("styleBtn").setAttribute("aria-expanded","false");}});
 try{const sv=JSON.parse(localStorage.getItem("hidden-city-bg")||"null");if(sv){if(sv.color)byId("bgColor").value=sv.color;applyBackdrop(sv.id,sv.color);}else applyBackdrop("auto");}catch(e){applyBackdrop("auto");}
 const gCountries=root.append("g");
 const gDots=root.append("g"),gLabels=root.append("g"),gArrows=root.append("g"),gGuess=root.append("g"),gSecret=root.append("g");
@@ -1539,6 +1641,17 @@ function renderPanel(newHint){
   const onIdx=S.mode==="online"?S.turn:idx;
   $("score").innerHTML=solo?"":S.players.map((q,i)=>`<span class="${i===onIdx?"on":""}" style="--pc:${pColor(i)}"><i style="background:${pColor(i)}"></i>${esc(q.name)} · ${q.guesses.length}</span>`).join("");
   $("turnTitle").style.color=solo?"":pColor(onIdx);
+  {const hud=$("hud");hud.hidden=false;hud.classList.toggle("solo",solo);
+    const best=q=>q.guesses.length?Math.min(...q.guesses.map(g=>g.d)):null,km=d=>d==null?"":d<1?"found":fmt(Math.round(d))+" km";
+    const gs=(n,l)=>`${n}${l?" of "+l:""} guess${n===1&&!l?"":"es"}`;
+    if(solo){const b=best(p),bg=b==null?null:p.guesses.reduce((a,g)=>g.d<a.d?g:a);
+      $("hudA").className="hudp";$("hudA").innerHTML=`<div><b>${S.mode==="daily"?"Daily challenge":"Solo · "+DIFFS[(S.settings&&S.settings.diff)||"normal"].name}</b><small>${gs(p.guesses.length,lim)}</small></div>`;
+      $("hudTurn").textContent="Closest";$("hudBig").textContent=b==null?"–":km(b);$("hudBig").style.color=bg?bg.band.color:"";$("hudB").innerHTML="";}
+    else{const wins=i=>{if(S.mode==="online"){const d=Online.doc;return (d&&d.score&&d.score[String(i)])||0;}return localSeries&&localSeries.key===S.players[0].name+"|"+S.players[1].name?localSeries.w[i]:0;};
+      const chip=i=>{const q=S.players[i],b=best(q);return `<i class="hdot" style="background:${pColor(i)}"></i><div><b>${esc(q.name)}</b><small>${gs(q.guesses.length,S.race?0:lim)}${b!=null?`<span class="hbest"> · ${km(b)}</span>`:""}</small></div><em title="Rounds won">${wins(i)}</em>`;};
+      [["hudA",0],["hudB",1]].forEach(([id,i])=>{const e=$(id);e.className="hudp"+(i===onIdx&&S.phase!=="over"?" on":"");e.style.setProperty("--pc",pColor(i));e.innerHTML=chip(i);});
+      $("hudTurn").textContent=S.phase==="over"?"Game over":S.lastChance?"Last chance":S.mode==="online"?(S.turn===S.view?"Your turn":"Their turn"):S.race?"Race":"VS";$("hudBig").textContent="";}
+  }
   const peek=$("peek");peek.hidden=solo||!!S.race;peek.textContent=p.peek?`Hiding: ${p.secret.name}`:"Show my city";
   // result
   const res=$("result"),last=p.guesses[p.guesses.length-1];
@@ -1561,16 +1674,20 @@ function renderPanel(newHint){
   const diff=(S.settings&&S.settings.diff)||"normal",easy=diff==="easy";
   const tgt=targetOf(idx),all=hintsFor(tgt,diff);
   let maxTier=Math.max(-1,...p.guesses.map(g=>g.band.tier));
-  $("hints").innerHTML=all.map((tier,ti)=>{
-    if(!tier.length)return "";
-    if(easy){const got=p.revealed[ti].length>0,h=tier[0];
-      return `<div class="tier"><div class="tl"><span>After guess ${EASY_AT[ti]}</span><span>${got?1:0}/1</span></div>${got?`<div class="hint${newHint&&newHint[0]===ti?" new":""}"><b>${h.k}</b><span>${h.v}</span></div>`:`<div class="locked">${h.k} · unlocks after guess ${EASY_AT[ti]}</div>`}</div>`;}
-    const got=p.revealed[ti];
-    const rows=got.map(hi=>`<div class="hint${newHint&&newHint[0]===ti&&newHint[1]===hi?" new":""}"><b>${tier[hi].k}</b><span>${tier[hi].v}</span></div>`).join("");
-    const left=tier.length-got.length;
-    const lock=left?`<div class="locked">${left} more ${left===1?"clue":"clues"} · ${ti===0?"one per guess":ti<=maxTier?"one per guess at this range":"unlock by getting "+["","within 3,000 km","within 1,000 km","within 300 km"][ti]}</div>`:"";
-    return `<div class="tier"><div class="tl"><span>${TIERS[ti]}</span><span>${got.length}/${tier.length}</span></div>${rows}${lock}</div>`;
-  }).join("");
+  {let total=0,got=0,cards="",openMore=false,nextLock="";
+    all.forEach((tier,ti)=>{
+      if(!tier.length)return;
+      const g=p.revealed[ti],n=easy?1:tier.length,have=easy?(g.length?1:0):g.length;total+=n;got+=have;
+      (easy?(have?[0]:[]):g).forEach(hi=>{const h=tier[hi],isNew=newHint&&newHint[0]===ti&&(easy||newHint[1]===hi);
+        cards+=`<div class="clue${String(h.v).length>24?" wide":""}${isNew?" new":""}"><b>${h.k}</b><span>${h.v}</span></div>`;});
+      if(have>=n)return;
+      if(easy){if(!nextLock)nextLock=`next one after guess ${EASY_AT[ti]}`;}
+      else if(ti===0||ti<=maxTier)openMore=true;
+      else if(!nextLock)nextLock=`more ${["","within 3,000 km","within 1,000 km","within 300 km"][ti]}`;
+    });
+    const note=got>=total?"all unlocked":[openMore?"a new one with your next guess":"",nextLock].filter(Boolean).join(" · ");
+    $("hints").innerHTML=`${cards?`<div class="cluegrid">${cards}</div>`:`<p class="clueempty">Your clues will appear here as you guess.</p>`}
+      <div class="cluelock"><div class="cbar"><i style="width:${total?Math.round(got/total*100):0}%"></i></div><span><strong>${got} of ${total}</strong> clues${note?" · "+note:""}</span></div>`;}
   // history: your guesses, and in two-player games the opponent's guesses at your city
   const opp=twoPlayer()&&!S.race?S.players[1-idx]:null;
   if(!opp)histTab="mine";
@@ -1827,7 +1944,7 @@ function achHTML(){
     <p class="small">${sourceNote()}.</p>`;
 }
 function startScreen(){
-  if(menuTab==="play")menuTab="home";
+  if(menuTab==="play")menuTab="mode";
   const scr=menuTab;
   if(scr==="single"&&!["solo","daily"].includes(pendingMode))pendingMode="solo";
   if(scr==="multi"&&!["duo","online"].includes(pendingMode))pendingMode="online";
