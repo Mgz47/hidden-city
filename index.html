@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-window.HC_VERSION="2026-11-10 09:41";
+window.HC_VERSION="2026-11-10 11:45";
 /* Hidden City: shared storage on Firebase Realtime Database.
    Gives the game the same small storage interface it uses inside Claude.
    Each device signs in anonymously, so the database rules can tell players apart. */
@@ -269,6 +269,7 @@ h3{font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:.12e
 .htabs button[aria-selected="true"]{background:var(--panel-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);}
 .newdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--burning);margin-left:5px;vertical-align:middle;}
 .hcap{font-size:12px;color:var(--muted);margin:0 0 4px;}
+.whodot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle;}
 .chip{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:999px;color:var(--ocean);font-weight:700;white-space:nowrap;}
 
 .pfoot{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(280px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 6px 2px;box-shadow:0 14px 40px rgba(0,0,0,.35);z-index:6;}
@@ -1243,10 +1244,11 @@ let S=null;
 const SETTINGS=(()=>{const st={diff:"normal",timer:0,limit:0};try{Object.assign(st,JSON.parse(localStorage.getItem("hidden-city-settings")||"{}"));}catch(e){}return st;})();
 function saveSettings(){try{localStorage.setItem("hidden-city-settings",JSON.stringify(SETTINGS));}catch(e){}}
 function newState(mode,names){return{mode,gid:Date.now(),turn:0,phase:"setup",lastChance:false,settings:{...SETTINGS},players:names.map(n=>({name:n,secret:null,guesses:[],revealed:[[],[],[],[]],found:false,peek:false}))};}
-const seeker=()=>S.players[S.view!=null?S.view:S.turn];
+const seeker=()=>S.race?S.board:S.players[S.view!=null?S.view:S.turn];
+function makeRace(st,target){st.race=true;st.board={name:"",guesses:[],revealed:[[],[],[],[]],found:false,peek:false};st.target=target;st.winner=null;return st;}
 const soloLike=()=>!!S&&(S.mode==="solo"||S.mode==="daily");
 const twoPlayer=()=>!!S&&(S.mode==="duo"||S.mode==="online");
-const targetOf=i=>S.players[soloLike()?1:1-i].secret;
+const targetOf=i=>S.race?S.target:S.players[soloLike()?1:1-i].secret;
 const DIFFS={easy:{name:"Easy",desc:"Capital cities only"},normal:{name:"Normal",desc:"Each country's capital and its best-known other city"},hard:{name:"Hard",desc:"Every place on the board, tiny towns too"}};
 /* Normal: per country, the capital plus its best-known other city; tiny countries with no well-known cities are left out. */
 const NORMAL=(()=>{
@@ -1443,7 +1445,7 @@ function drawGuesses(p){
   const data=p.guesses;
   gGuess.selectAll("g").data(data,d=>d.city.id).join(enter=>{const g=enter.append("g");g.append("circle").attr("class","gring");g.append("circle").attr("class","gmark");g.append("text").attr("class","gnum");return g;})
     .attr("transform",d=>`translate(${proj([d.city.lon,d.city.lat])})`)
-    .each(function(d,i){const g=d3.select(this);g.select(".gmark").attr("fill",d.band.hex);g.select(".gring").attr("stroke",d.band.hex);g.select(".gnum").text(i+1);});
+    .each(function(d,i){const g=d3.select(this);g.select(".gmark").attr("fill",d.band.hex);g.select(".gring").attr("stroke",d.band.hex).style("stroke",S.race&&d.by!=null?pColor(d.by):null).style("opacity",S.race&&d.by!=null?1:null);g.select(".gnum").text(i+1);});
   const arrows=[];
   for(const d of data){
     if(d.d<1||d.band.tier>=2)continue; // no arrow once you're within 1,000 km
@@ -1510,7 +1512,7 @@ $("peek").addEventListener("click",()=>{const p=seeker();p.peek=!p.peek;renderPa
 function pickFromMap(c){if(gInput.disabled)return;gInput.value=c.name;gInput.focus();$("gmsg").textContent=`${c.name}, ${c.country} — press Guess`;$("gmsg").className="msg";}
 
 const GIVEUP_AFTER=10;
-function updateGiveUp(){const b=$("giveUp");if(!b||!S)return;const p=seeker();
+function updateGiveUp(){const b=$("giveUp");if(!b||!S)return;const p=S.race?S.players[S.mode==="online"?S.view:S.turn]:seeker();
   const show=S.phase!=="over"&&!gInput.disabled&&p.guesses.length>=GIVEUP_AFTER&&!p.found;
   b.hidden=!show;if(!show){b.classList.remove("confirm");b.textContent="Give up";}}
 let giveUpT=0;
@@ -1523,15 +1525,15 @@ let histTab="mine";const histSeen=new Map();
 document.getElementById("htabs").addEventListener("click",e=>{const b=e.target.closest("[data-h]");if(!b)return;histTab=b.dataset.h;renderPanel();});
 function renderPanel(newHint){
   setTimeout(updateGiveUp,0);
-  const p=seeker(),idx=S.players.indexOf(p);
+  const p=seeker(),idx=S.race?(S.view!=null?S.view:S.turn):S.players.indexOf(p);
   const solo=soloLike();
-  $("turnTitle").textContent=S.mode==="daily"?"Find today's city":solo?"Find the computer's city":S.mode==="online"?(S.phase==="over"?"Game over":S.turn===S.view?"Your turn":`${S.players[S.turn].name} is guessing…`):`${p.name}'s guess`;
+  $("turnTitle").textContent=S.mode==="daily"?"Find today's city":solo?"Find the computer's city":S.mode==="online"?(S.phase==="over"?"Game over":S.turn===S.view?"Your turn":`${S.players[S.turn].name} is guessing…`):`${(S.race?S.players[S.turn]:p).name}'s guess`;
   const lim=S.settings&&S.settings.limit;
-  $("turnSub").textContent=`${p.guesses.length}${lim?" of "+lim:""} guess${p.guesses.length===1&&!lim?"":"es"}${S.lastChance?" · last chance to tie":""}${S.mode==="online"?" · room "+S.code:""}`;
+  $("turnSub").textContent=S.race?`Race · ${p.guesses.length} guess${p.guesses.length===1?"":"es"} on the board${lim?` · ${lim} each`:""}${S.mode==="online"?" · room "+S.code:""}`:`${p.guesses.length}${lim?" of "+lim:""} guess${p.guesses.length===1&&!lim?"":"es"}${S.lastChance?" · last chance to tie":""}${S.mode==="online"?" · room "+S.code:""}`;
   const onIdx=S.mode==="online"?S.turn:idx;
   $("score").innerHTML=solo?"":S.players.map((q,i)=>`<span class="${i===onIdx?"on":""}" style="--pc:${pColor(i)}"><i style="background:${pColor(i)}"></i>${esc(q.name)} · ${q.guesses.length}</span>`).join("");
   $("turnTitle").style.color=solo?"":pColor(onIdx);
-  const peek=$("peek");peek.hidden=solo;peek.textContent=p.peek?`Hiding: ${p.secret.name}`:"Show my city";
+  const peek=$("peek");peek.hidden=solo||!!S.race;peek.textContent=p.peek?`Hiding: ${p.secret.name}`:"Show my city";
   // result
   const res=$("result"),last=p.guesses[p.guesses.length-1];
   if(!last){res.className="result empty";res.innerHTML="Type a city or town. Each guess tells you how hot or cold you are and unlocks a clue. The closer you get, the sharper the clues.";}
@@ -1543,7 +1545,7 @@ function renderPanel(newHint){
     else if(t===2){dirTxt="You're within 1,000 km. No more arrows from here: use the clues.";}
     else if(t===1){rot=snap16(last.brg)*22.5;dirTxt=`Somewhere to the ${DIRS16[snap16(last.brg)]}`;}
     else{rot=snap8(last.brg)*45;dirTxt=`Very roughly ${DIRS[snap8(last.brg)]}. Get within 3,000 km for a sharper heading.`;}
-    res.innerHTML=`<div class="guessname">${last.city.name}, ${last.city.country}</div>
+    res.innerHTML=`<div class="guessname">${S.race&&last.by!=null?esc(S.players[last.by].name)+": ":""}${last.city.name}, ${last.city.country}</div>
       <div class="band" style="color:${last.band.color}">${last.d<1?"Found":last.band.label}</div>
       <div class="compass">${rot===null?`<span style="color:var(--faint);font-size:20px">${last.d<1?"★":"?"}</span>`:`<svg width="26" height="26" viewBox="0 0 26 26" style="transform:rotate(${rot}deg)"><path d="M13 2 L20 22 L13 17 L6 22 Z" fill="${last.band.hex}"/></svg>`}</div>
       <div class="dist">${last.d<1?"0 km":distText(last.d,last.band)}</div>
@@ -1564,7 +1566,7 @@ function renderPanel(newHint){
     return `<div class="tier"><div class="tl"><span>${TIERS[ti]}</span><span>${got.length}/${tier.length}</span></div>${rows}${lock}</div>`;
   }).join("");
   // history: your guesses, and in two-player games the opponent's guesses at your city
-  const opp=twoPlayer()?S.players[1-idx]:null;
+  const opp=twoPlayer()&&!S.race?S.players[1-idx]:null;
   if(!opp)histTab="mine";
   $("histTitle").hidden=!!opp;$("htabs").hidden=!opp;
   if(opp){
@@ -1577,7 +1579,8 @@ function renderPanel(newHint){
   if(showOpp){$("hcap").textContent=`How close ${opp.name} is getting to ${S.mode==="duo"?p.name+"'s":"your"} city.`;
     $("hist").innerHTML=opp.guesses.length?opp.guesses.map((g,i)=>`<li><span class="n">${i+1}</span><span>${g.city.name}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).reverse().join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
     return;}
-  $("hist").innerHTML=p.guesses.length?p.guesses.map((g,i)=>`<li><span class="n">${i+1}</span><span>${g.city.name}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).reverse().join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
+  $("histTitle").textContent=S.race?"Guesses on the board":"Your guesses";
+  $("hist").innerHTML=p.guesses.length?p.guesses.map((g,i)=>`<li><span class="n">${i+1}</span><span>${S.race&&g.by!=null?`<i class="whodot" style="background:${pColor(g.by)}" title="${esc(S.players[g.by].name)}"></i>`:""}${g.city.name}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).reverse().join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
 }
 
 function doGuess(){
@@ -1588,6 +1591,18 @@ function doGuess(){
   if(p.guesses.some(g=>g.city.id===c.id)){msg.textContent=`You already guessed ${c.name}.`;msg.className="msg err";return;}
   if(S.mode==="online")return Online.guess(c);
   stopTurnTimer();
+  if(S.race){
+    const who=S.players[S.turn];
+    const {d,nh,all}=applyGuess(p,c,S.target);const g=p.guesses[p.guesses.length-1];g.by=S.turn;who.guesses.push(g);
+    msg.textContent=nh?`New clue for both of you: ${all[nh[0]][nh[1]].k}`:"No new clues at this range.";msg.className="msg";
+    gInput.value="";drawGuesses(p);renderPanel(nh);buzz(d);
+    if(d===0){who.found=true;S.winner=S.turn;return endGame();}
+    flyTo(c,Math.max(3,Math.min(K*1.6,5)));
+    const q=S.players[1-S.turn];
+    if(exhausted(who)&&exhausted(q))return endGame();
+    if(exhausted(q)){msg.textContent=`${q.name} is out of guesses. Keep going.`;startLocalTimer();gInput.focus();return;}
+    setTurnLocked(true);queueSwitch();return;
+  }
   const tgt=targetOf(S.players.indexOf(p));
   const {d,nh,all}=applyGuess(p,c,tgt);
   msg.textContent=nh?`New clue: ${all[nh[0]][nh[1]].k}`:"No new clues at this range.";msg.className="msg";
@@ -1714,7 +1729,9 @@ function buildRecord(){
       conts:[...new Set(p.guesses.map(g=>g.city.cont))],lastChance:twoPlayer()&&S.lastChance&&S.finder!==i});
   });
   if(twoPlayer()){const [a,b]=S.players;rec.mode="duo";
+    if(S.race)rec.race=true;
     if(S.gaveUp!=null){rec.result="win";rec.winner=1-S.gaveUp;}
+    else if(S.race){if(S.winner!=null){rec.result="win";rec.winner=S.winner;}else{rec.result="draw";rec.winner=null;}}
     else if(a.found===b.found){rec.result="draw";rec.winner=null;}
     else{rec.result="win";rec.winner=a.found?0:1;}}
   else{rec.result="solo";}
@@ -1725,7 +1742,9 @@ function buildRecord(){
 const overlay=$("overlay"),card=$("card");
 const show=html=>{overlay.classList.remove("menu");card.classList.remove("home");card.innerHTML=html;const was=overlay.hidden;overlay.hidden=false;if(was)overlay.classList.remove("in"),void overlay.offsetWidth,overlay.classList.add("in");card.classList.remove("enter");void card.offsetWidth;card.classList.add("enter");};
 const hide=()=>{overlay.hidden=true;};
-let pendingMode="duo",menuTab="home";
+let pendingMode="duo",menuTab="home",pendingType="hide";
+try{const t=localStorage.getItem("hidden-city-type");if(t==="race"||t==="hide")pendingType=t;}catch(e){}
+const TYPES={hide:["Hide & seek","Each player hides a city. Find your rival's before they find yours."],race:["Race","The computer hides one city. Take turns, share every guess and clue, and be the one who finds it."]};
 const names={n1:"Player 1",n2:"Player 2",solo:"Player 1"};
 function sourceNote(){return store.mode==="shared"?"Shared with everyone who opens this game":"Saved on this device";}
 /* ---------- Main menu: Home → Play (Singleplayer / Multiplayer) and Settings ---------- */
@@ -1771,7 +1790,8 @@ function setupHTML(group){
   const opts=group==="single"
     ?[["solo","Solo practice","The computer hides, you seek"],["daily","Daily challenge",streak?`${streak}-day streak`:"Same city for everyone today"]]
     :[["online","Online","Two phones, join with a code"],["duo","Same device","Two players, pass the phone"]];
-  return `<div class="modes">${opts.map(([k,t,d])=>`<button class="mode" data-m="${k}" aria-pressed="${m===k}"><strong>${t}</strong><span>${d}</span></button>`).join("")}</div>${action}${howToHTML()}`;
+  const typeSel=group==="multi"?`<div class="setgroup"><div class="setlabel">Game</div><div class="seg" role="group" aria-label="Game type">${Object.entries(TYPES).map(([k,v])=>`<button type="button" data-type="${k}" aria-pressed="${pendingType===k}">${v[0]}</button>`).join("")}</div><p class="small">${TYPES[pendingType][1]}</p></div>`:"";
+  return `${typeSel}<div class="modes">${opts.map(([k,t,d])=>`<button class="mode" data-m="${k}" aria-pressed="${m===k}"><strong>${t}</strong><span>${d}</span></button>`).join("")}</div>${action}${howToHTML()}`;
 }
 function settingsHTML(){
   const mt=document.documentElement.getAttribute("data-mt")||"dark";
@@ -1838,6 +1858,7 @@ function startScreen(){
     card.querySelectorAll("[data-vib]").forEach(b=>b.addEventListener("click",()=>{try{localStorage.setItem("hc-vibrate",b.dataset.vib);}catch(e){}card.querySelectorAll("[data-vib]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));if(b.dataset.vib==="1")try{navigator.vibrate(30);}catch(e){}}));
     return;}
   if(scr!=="single"&&scr!=="multi")return;
+  card.querySelectorAll("[data-type]").forEach(b=>b.addEventListener("click",()=>{startScreen.save();pendingType=b.dataset.type;try{localStorage.setItem("hidden-city-type",pendingType);}catch(e){}startScreen();}));
   card.querySelectorAll(".mode").forEach(b=>b.addEventListener("click",()=>{startScreen.save();pendingMode=b.dataset.m;try{localStorage.setItem("hidden-city-mode",pendingMode);}catch(e){}startScreen();}));
   card.querySelectorAll("[data-diff]").forEach(b=>b.addEventListener("click",()=>{SETTINGS.diff=b.dataset.diff;saveSettings();card.querySelectorAll("[data-diff]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));$("diffDesc").textContent=`${DIFFS[SETTINGS.diff].desc} · ${poolOf(SETTINGS.diff).length} places to hide in`;}));
   if($("setTimer"))$("setTimer").addEventListener("change",e=>{SETTINGS.timer=+e.target.value;saveSettings();});
@@ -1846,9 +1867,10 @@ function startScreen(){
   bind("go",()=>{
     startScreen.save();
     if(pendingMode==="solo"){S=newState("solo",[myName(),"Computer"]);const pool=poolOf(S.settings.diff);S.players[1].secret=pool[Math.floor(Math.random()*pool.length)];beginPlay();}
-    else{const n1=names.n1.trim()||"Player 1",n2=names.n2.trim()||"Player 2";S=newState("duo",[n1,pkey(n2)===pkey(n1)?n2+" 2":n2]);hideScreen(0);}
+    else{const n1=names.n1.trim()||"Player 1",n2=names.n2.trim()||"Player 2";S=newState("duo",[n1,pkey(n2)===pkey(n1)?n2+" 2":n2]);
+      if(pendingType==="race"){const pool=poolOf(S.settings.diff);makeRace(S,pool[Math.floor(Math.random()*pool.length)]);beginPlay();}else hideScreen(0);}
   });
-  bind("ocreate",()=>Online.create(myName()));
+  bind("ocreate",()=>Online.create(myName(),pendingType));
   bind("ojoin",()=>Online.join($("ocode").value,myName()));
   if($("ocode"))$("ocode").addEventListener("keydown",e=>{if(e.key==="Enter")Online.join($("ocode").value,myName());});
   bind("orejoin",()=>Online.rejoin(Online.saved()));
@@ -1929,6 +1951,13 @@ async function endGame(){
       <p>${esc(a.name)} made ${n} guesses. ${b.secret.pop<100?"It was a small place, so that one was tough.":"Have a look at where it was, then try another round."}</p>${freshHTML}${buttons}`;
     else html=`<div class="eyebrow">Found it</div><h2>The computer was hiding in ${b.secret.name}, ${b.secret.country}</h2>
       <p>${esc(a.name)} found it in <strong style="color:var(--ink)">${n} guess${n===1?"":"es"}</strong>. ${n<=5?"That's sharp navigation.":n<=10?"Solid detective work.":"You got there in the end."}</p>${freshHTML}${buttons}`;
+  }else if(S.race){
+    const t=S.target;drawSecrets([t]);flyTo(t,3);
+    let title,sub;
+    if(S.gaveUp!=null){title=`${esc(S.players[1-S.gaveUp].name)} wins!`;sub=`${esc(S.players[S.gaveUp].name)} gave up.`;}
+    else if(S.winner!=null){const w=S.players[S.winner];title=`${esc(w.name)} found it first!`;sub=`It took ${S.board.guesses.length} guesses on the board, ${w.guesses.length} of them by ${esc(w.name)}.`;}
+    else{title="Nobody found it. It's a draw!";sub="Both players ran out of guesses.";}
+    html=`<div class="eyebrow">Race over</div><h2>${title}</h2><p>The hidden city was <strong style="color:var(--ink)">${t.name}, ${t.country}</strong>. ${sub}</p>${isOnline?Online.scoreLine():localScoreLine()}${freshHTML}${buttons}`;
   }else{
     drawSecrets([a.secret,b.secret]);
     let title;
@@ -1961,13 +1990,15 @@ function localScoreLine(){
   if(!localSeries||localSeries.key!==key||localSeries.gid!==S.gid){
     if(!localSeries||localSeries.key!==key)localSeries={key,w:[0,0],d:0,rounds:0};
     localSeries.gid=S.gid;localSeries.rounds++;
-    if(S.gaveUp!=null)localSeries.w[1-S.gaveUp]++;else if(a.found===b.found)localSeries.d++;else localSeries.w[a.found?0:1]++;}
+    if(S.gaveUp!=null)localSeries.w[1-S.gaveUp]++;else if(S.race){if(S.winner!=null)localSeries.w[S.winner]++;else localSeries.d++;}else if(a.found===b.found)localSeries.d++;else localSeries.w[a.found?0:1]++;}
   const L=localSeries;if(L.rounds<2)return "";
   return `<p class="series">After ${L.rounds} rounds: <strong>${esc(a.name)} ${L.w[0]}</strong> – <strong>${L.w[1]} ${esc(b.name)}</strong>${L.d?` · ${L.d} draw${L.d>1?"s":""}`:""}</p>`;}
 function playAgain(){
   if(S.mode==="online")return Online.again();
   const set={...S.settings};
-  if(S.mode==="duo"){const names=S.players.map(p=>p.name),first=1-(S.first||0);resetBoard();S=newState("duo",names);S.settings=set;S.first=first;hideScreen(0);return;}
+  if(S.mode==="duo"){const names=S.players.map(p=>p.name),first=1-(S.first||0),race=!!S.race;resetBoard();S=newState("duo",names);S.settings=set;S.first=first;
+    if(race){const pool=poolOf(set.diff);makeRace(S,pool[Math.floor(Math.random()*pool.length)]);beginPlay();return;}
+    hideScreen(0);return;}
   const n=S.players[0].name;resetBoard();S=newState("solo",[n,"Computer"]);S.settings=set;const pool=poolOf(set.diff);S.players[1].secret=pool[Math.floor(Math.random()*pool.length)];beginPlay();
 }
 /* ---------- Shared storage access ---------- */
@@ -2005,14 +2036,15 @@ const Online=(()=>{
   function err(msg){O.leave();show(`<div class="eyebrow">Online</div><h2>${msg}</h2><button class="btn wide" id="oback">Back to menu</button>`);$("oback").addEventListener("click",()=>{menuTab="play";startScreen();});}
   const code4=()=>Array.from({length:4},()=>CH[Math.floor(Math.random()*CH.length)]).join("");
 
-  O.create=async name=>{
+  O.create=async(name,type)=>{
     show(`<div class="eyebrow">Online</div><h2>Creating a room…</h2>`);
     const d=await getDB();if(!d)return err(NODB);
     O.cid=myCid();let code=code4();
     for(let t=0;t<5;t++){const s=await d.doc("rooms/"+code).get().catch(()=>null);if(!s||!s.exists)break;code=code4();}
     O.code=code;O.ref=d.doc("rooms/"+code);
     const uid=d.uid?await d.uid():null;
-    try{await O.ref.set({code,created:Date.now(),status:"lobby",set:{diff:SETTINGS.diff,timer:SETTINGS.timer,limit:SETTINGS.limit},turn:0,turnAt:0,lastChance:false,finder:null,gaveUp:null,
+    const race=type==="race",pool=poolOf(SETTINGS.diff),tgt=race?pool[Math.floor(Math.random()*pool.length)]:null;
+    try{await O.ref.set({code,created:Date.now(),status:"lobby",mode:race?"race":"hide",tgt:tgt?enc(tgt.id,code):null,set:{diff:SETTINGS.diff,timer:SETTINGS.timer,limit:SETTINGS.limit},turn:0,turnAt:0,lastChance:false,finder:null,gaveUp:null,
       p:{"0":{cid:O.cid,uid,name,g:[],miss:0,sec:null}}});}
     catch(e){return err("Couldn't create a room. You may need edit access to this game, or your connection dropped.");}
     saveRoom();listen();
@@ -2032,7 +2064,8 @@ const Online=(()=>{
     if(r.status!=="lobby")return err(`Room ${code} has already started.`);
     const nm=p["0"]&&pkey(name)===pkey(p["0"].name)?name+" 2":name;
     const uid=d.uid?await d.uid():null;
-    try{await O.ref.update({status:"hiding",p:{"1":{cid:O.cid,uid,name:nm,g:[],miss:0,sec:null}}});}
+    const up=r.mode==="race"?{status:"playing",turn:r.first||0,turnAt:Date.now(),p:{"1":{cid:O.cid,uid,name:nm,g:[],miss:0,sec:null}}}:{status:"hiding",p:{"1":{cid:O.cid,uid,name:nm,g:[],miss:0,sec:null}}};
+    try{await O.ref.update(up);}
     catch(e){return err("Couldn't join. You need edit access to this game: ask your friend to share it with you from the Share menu.");}
     saveRoom();listen();
   };
@@ -2099,7 +2132,7 @@ const Online=(()=>{
     show(`<div class="eyebrow">Online room</div><h2>Share this code with your friend</h2>
       <div class="roomcode" id="rcode">${d.code}</div>
       <p>They open Hidden City on their phone, pick <strong>Online</strong> and type the code. ${ON_SITE?`If they don't have the game yet, send them this link: <strong>${esc(SITE_LINK)}</strong>`:`They need edit access to this game, shared from the Share menu at the top.`}</p>
-      <p class="small">${settingsSummary(d.set)}</p>
+      <p class="small">${d.mode==="race"?"Race · ":""}${settingsSummary(d.set)}</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${canShare()?`<button class="btn" id="rshare">Share invite</button>`:""}<button class="btn ${canShare()?"ghost":""}" id="rcopy">Copy code</button><button class="btn ghost" id="rcancel">Cancel</button></div>
       <p class="waiting"><span class="pulse"></span>Waiting for your friend to join…</p>`);
     $("rcopy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(d.code);$("rcopy").textContent="Copied";}catch(e){const r=document.createRange();r.selectNodeContents($("rcode"));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);$("rcopy").textContent="Selected";}});
@@ -2126,11 +2159,11 @@ const Online=(()=>{
     $("hideRand").addEventListener("click",()=>{const pool=poolOf(diff);ok(pool[Math.floor(Math.random()*pool.length)]);});
     setTimeout(()=>inp.focus(),50);
   }
-  function resultKey(){return S.gaveUp!=null?String(1-S.gaveUp):(S.players[0].found===S.players[1].found?"d":(S.players[0].found?"0":"1"));}
+  function resultKey(){if(S.gaveUp!=null)return String(1-S.gaveUp);if(S.race)return S.winner!=null?String(S.winner):"d";return S.players[0].found===S.players[1].found?"d":(S.players[0].found?"0":"1");}
   O.scoreLine=()=>{const d=O.doc;if(!d)return "";const sc=Object.assign({},d.score||{}),k=resultKey();sc[k]=(sc[k]||0)+1;const n=d.round||1;
     return `<p class="series">Room ${d.code}${n>1?` · round ${n}`:""}: <strong>${esc(S.players[0].name)} ${sc["0"]||0}</strong> – <strong>${sc["1"]||0} ${esc(S.players[1].name)}</strong>${sc.d?` · ${sc.d} draw${sc.d>1?"s":""}`:""}</p>`;};
   function againWait(d){
-    O.screen="again";const oth=d.p[1-O.me]||{},first=1-(d.first||0);
+    O.screen="again";const oth=d.p[1-O.me]||{},first=1-(d.first||0);const race=d.mode==="race";
     show(`<div class="eyebrow">Room ${d.code} · round ${(d.round||1)+1}</div><h2>Waiting for ${esc(oth.name||"your friend")}</h2>
       <p>${esc(oth.name||"Your friend")} needs to tap Play again too. ${first===O.me?"You'll guess first this round.":esc(oth.name||"They")+" will guess first this round."}</p>
       <p class="waiting"><span class="pulse"></span>Waiting…</p><button class="btn ghost wide" id="oleave2">Leave room</button>`);
@@ -2139,6 +2172,10 @@ const Online=(()=>{
   async function rematch(d){
     if(!O.ref||!O.doc||O.doc.status!=="over")return;
     const k=resultKey(),sc=d.score||{},first=1-(d.first||0);
+    if(d.mode==="race"){const pool=poolOf((d.set&&d.set.diff)||"normal"),t=pool[Math.floor(Math.random()*pool.length)];
+      try{await O.ref.update({status:"playing",round:(d.round||1)+1,first,turn:first,turnAt:Date.now(),gaveUp:null,winner:null,rg:null,tgt:enc(t.id,d.code),score:{[k]:(sc[k]||0)+1},
+        p:{"0":{again:null,miss:0},"1":{again:null,miss:0}}});}catch(e){O.resetting=false;}
+      return;}
     try{await O.ref.update({status:"hiding",round:(d.round||1)+1,first,turn:first,turnAt:0,lastChance:false,finder:null,gaveUp:null,score:{[k]:(sc[k]||0)+1},
       p:{"0":{g:null,miss:0,sec:null,again:null},"1":{g:null,miss:0,sec:null,again:null}}});}catch(e){O.resetting=false;}
   }
@@ -2146,6 +2183,15 @@ const Online=(()=>{
     try{await O.ref.update({p:{[O.me]:{again:true}}});}catch(e){err("Couldn't reach the room. Check your connection.");}};
   O.leaveRoom=async()=>{const r=O.ref,me=O.me;O.leave();clearRoom();try{if(r)await r.update({p:{[me]:{left:true,again:null}}});}catch(e){}resetBoard();menuTab="play";startScreen();};
   function rebuild(d){
+    if(d.mode==="race"){
+      const diff=(d.set&&d.set.diff)||"normal",tgt=dec(d.tgt,d.code);
+      const players=[0,1].map(i=>{const x=d.p[i]||{};return {name:x.name||"…",secret:null,guesses:[],revealed:[[],[],[],[]],found:false,peek:false,missed:x.miss||0};});
+      const st=makeRace({mode:"online",code:d.code,me:O.me,view:O.me,turn:d.turn,phase:d.status==="over"?"over":"play",lastChance:false,gaveUp:d.gaveUp,
+        settings:d.set||{diff:"normal",timer:0,limit:0},turnAt:d.turnAt,players},tgt);
+      st.winner=d.winner!=null?d.winner:null;
+      for(const r of (d.rg||[])){const c=r&&CITIES[r.id];if(!c||!tgt)continue;const res=applyGuess(st.board,c,tgt,diff);const g=st.board.guesses[st.board.guesses.length-1];g.by=r.by;players[r.by].guesses.push(g);if(res.d===0)players[r.by].found=true;st.board._nh=res.nh;}
+      return st;
+    }
     const players=[0,1].map(i=>{const x=d.p[i]||{};return {name:x.name||"…",secret:dec(x.sec,d.code),guesses:[],revealed:[[],[],[],[]],found:false,peek:false,missed:x.miss||0,_ids:x.g||[],_nh:null};});
     players.forEach((pl,i)=>{const tgt=players[1-i].secret;if(!tgt)return;for(const id of pl._ids){const c=CITIES[id];if(c)pl._nh=applyGuess(pl,c,tgt,(d.set&&d.set.diff)||"normal").nh;}});
     return {mode:"online",code:d.code,me:O.me,view:O.me,turn:d.turn,phase:d.status==="over"?"over":"play",lastChance:!!d.lastChance,finder:d.finder,gaveUp:d.gaveUp,
@@ -2154,7 +2200,9 @@ const Online=(()=>{
   function play(d){
     const prev=O.screen==="play"&&S&&S.mode==="online"&&S.code===d.code?S:null;
     const me=O.me,prevMy=prev?prev.players[me].guesses.length:0,prevOpp=prev?prev.players[1-me].guesses.length:0,prevTurn=prev?prev.turn:null;
+    const prevBoard=prev&&prev.race?prev.board.guesses.length:0;
     S=rebuild(d);
+    if(S.race)return playRace(d,prev,prevBoard,prevTurn);
     const p=S.players[me],q=S.players[1-me];
     if(O.screen!=="play"){O.screen="play";hide();resetBoard();$("passBtn").hidden=true;$("switching").hidden=true;svg.transition().duration(450).call(zoom.transform,d3.zoomIdentity);}
     const mineNew=p.guesses.length>prevMy&&!!prev,oppNew=q.guesses.length>prevOpp&&!!prev;
@@ -2176,6 +2224,23 @@ const Online=(()=>{
     timer(d);
     if(S.phase==="over"&&!O.endShown){O.endShown=true;stopTurnTimer();clearRoom();endGame();}
   }
+  function playRace(d,prev,prevBoard,prevTurn){
+    const me=O.me,q=S.players[1-me],b=S.board;
+    if(O.screen!=="play"){O.screen="play";hide();resetBoard();$("passBtn").hidden=true;$("switching").hidden=true;svg.transition().duration(450).call(zoom.transform,d3.zoomIdentity);}
+    const fresh=b.guesses.length>prevBoard&&!!prev,last=b.guesses[b.guesses.length-1];
+    drawGuesses(b);renderPanel(fresh?b._nh:null);
+    const myTurn=S.phase!=="over"&&S.turn===me;setTurnLocked(!myTurn);
+    const parts=[];
+    if(fresh){if(last.by===me)buzz(last.d);
+      parts.push(`${last.by===me?"You":q.name} guessed ${last.city.name}: ${last.d<1?"found it!":fmt(Math.round(last.d))+" km away."}`);
+      if(b._nh)parts.push(`New clue: ${hintsFor(S.target,S.settings.diff)[b._nh[0]][b._nh[1]].k}.`);
+      flyTo(last.city,Math.max(3,Math.min(K*1.6,5)));}
+    if(S.phase!=="over"&&!myTurn)parts.push(`Waiting for ${q.name}…`);
+    const msg=$("gmsg");if(parts.length){msg.textContent=parts.join(" ");msg.className="msg";}else if(!b.guesses.length){msg.textContent="Race! The first to find the hidden city wins.";msg.className="msg";}
+    if(myTurn&&prevTurn!==S.turn){banner("Your turn",`Race · guess ${S.players[me].guesses.length+1}`,pColor(me));if(window.matchMedia("(min-width:761px)").matches)gInput.focus();}
+    timer(d);
+    if(S.phase==="over"&&!O.endShown){O.endShown=true;stopTurnTimer();clearRoom();endGame();}
+  }
   function timer(d){
     const t=(d.set&&d.set.timer)||0;
     if(!t||d.status!=="playing"){stopTurnTimer();return;}
@@ -2184,7 +2249,7 @@ const Online=(()=>{
   }
   async function skip(d){
     if(O.lastSkip===d.turnAt||!O.ref)return;O.lastSkip=d.turnAt;
-    const cur=d.turn,o=1-cur,lim=(d.set&&d.set.limit)||0,qn=(d.p[o].g||[]).length;
+    const cur=d.turn,o=1-cur,lim=(d.set&&d.set.limit)||0,qn=d.mode==="race"?(d.rg||[]).filter(r=>r&&r.by===o).length:(d.p[o].g||[]).length;
     const qEx=lim&&!S.players[o].found&&qn>=lim;
     const up={turnAt:Date.now(),p:{[cur]:{miss:(d.p[cur].miss||0)+1}}};
     if(d.lastChance)up.status="over";else up.turn=qEx?cur:o;
@@ -2193,6 +2258,15 @@ const Online=(()=>{
   }
   O.guess=async c=>{
     const d=O.doc,me=O.me,o=1-me;if(!d||d.status!=="playing"||d.turn!==me)return;
+    if(d.mode==="race"){
+      const rg=(d.rg||[]).filter(Boolean).concat({id:c.id,by:me}),found=S.target&&c.id===S.target.id,lim=(d.set&&d.set.limit)||0;
+      const myN=rg.filter(r=>r.by===me).length,qN=rg.filter(r=>r.by===o).length,meEx=lim&&!found&&myN>=lim,qEx=lim&&qN>=lim;
+      const up={rg,turnAt:Date.now()};
+      if(found){up.status="over";up.winner=me;}else if(meEx&&qEx)up.status="over";else if(qEx)up.turn=me;else up.turn=o;
+      gInput.value="";setTurnLocked(true);stopTurnTimer();
+      try{await O.ref.update(up);}catch(e){setTurnLocked(false);const m=$("gmsg");m.textContent="Couldn't send your guess. Check your connection and try again.";m.className="msg err";}
+      return;
+    }
     const q=S.players[o],ids=(d.p[me].g||[]).concat(c.id),found=c.id===q.secret.id;
     const lim=(d.set&&d.set.limit)||0,qEx=lim&&!q.found&&q.guesses.length>=lim,meEx=lim&&!found&&ids.length>=lim;
     const up={p:{[me]:{g:ids}},turnAt:Date.now()};
