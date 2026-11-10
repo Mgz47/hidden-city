@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-window.HC_VERSION="2026-11-10 12:18";
+window.HC_VERSION="2026-11-10 12:21";
 /* Hidden City: shared storage on Firebase Realtime Database.
    Gives the game the same small storage interface it uses inside Claude.
    Each device signs in anonymously, so the database rules can tell players apart. */
@@ -1700,10 +1700,10 @@ function renderPanel(newHint){
   const showOpp=opp&&histTab==="opp";
   $("hcap").hidden=!showOpp;
   if(showOpp){$("hcap").textContent=`How close ${opp.name} is getting to ${S.mode==="duo"?p.name+"'s":"your"} city.`;
-    $("hist").innerHTML=opp.guesses.length?opp.guesses.map((g,i)=>`<li><span class="n">${i+1}</span><span>${g.city.name}${capMark(g.city)}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).reverse().join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
+    $("hist").innerHTML=opp.guesses.length?opp.guesses.map((g,i)=>[g,i]).sort((x,y)=>x[0].d-y[0].d).map(([g,i])=>`<li><span class="n">${i+1}</span><span>${g.city.name}${capMark(g.city)}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
     return;}
   $("histTitle").textContent=S.race?"Guesses on the board":"Your guesses";
-  $("hist").innerHTML=p.guesses.length?p.guesses.map((g,i)=>`<li><span class="n">${i+1}</span><span>${S.race&&g.by!=null?`<i class="whodot" style="background:${pColor(g.by)}" title="${esc(S.players[g.by].name)}"></i>`:""}${g.city.name}${capMark(g.city)}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).reverse().join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
+  $("hist").innerHTML=p.guesses.length?p.guesses.map((g,i)=>[g,i]).sort((x,y)=>x[0].d-y[0].d).map(([g,i])=>`<li><span class="n">${i+1}</span><span>${S.race&&g.by!=null?`<i class="whodot" style="background:${pColor(g.by)}" title="${esc(S.players[g.by].name)}"></i>`:""}${g.city.name}${capMark(g.city)}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
 }
 
 function doGuess(){
