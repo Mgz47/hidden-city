@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-window.HC_VERSION="2026-11-10 12:13";
+window.HC_VERSION="2026-11-10 12:18";
 /* Hidden City: shared storage on Firebase Realtime Database.
    Gives the game the same small storage interface it uses inside Claude.
    Each device signs in anonymously, so the database rules can tell players apart. */
@@ -585,8 +585,8 @@ table.lb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
 }
 .crown{position:relative;display:inline-block;width:1em;height:1em;vertical-align:-.12em;margin-left:.3em;flex:none;cursor:help;outline:none}
 .crown svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 3px rgba(245,197,66,.45))}
-.crown::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%) translateY(3px);white-space:nowrap;background:#0b1424;color:#f5d77a;border:1px solid rgba(245,197,66,.55);border-radius:8px;padding:4px 8px;font:600 12px/1.2 system-ui,sans-serif;letter-spacing:0;text-transform:none;box-shadow:0 6px 18px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .12s,transform .12s;z-index:30}
-.crown:hover::after,.crown:focus::after{opacity:1;transform:translateX(-50%) translateY(0)}
+.crown::after{content:attr(data-tip);position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%) translateX(-3px);white-space:nowrap;background:#0b1424;color:#f5d77a;border:1px solid rgba(245,197,66,.55);border-radius:8px;padding:4px 8px;font:600 12px/1.2 system-ui,sans-serif;letter-spacing:0;text-transform:none;box-shadow:0 6px 18px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .12s,transform .12s;z-index:30}
+.crown:hover::after,.crown:focus::after{opacity:1;transform:translateY(-50%) translateX(0)}
 </style>
 
 <div class="app">
