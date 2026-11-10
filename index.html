@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-window.HC_VERSION="2026-11-10 11:58";
+window.HC_VERSION="2026-11-10 11:59";
 /* Hidden City: shared storage on Firebase Realtime Database.
    Gives the game the same small storage interface it uses inside Claude.
    Each device signs in anonymously, so the database rules can tell players apart. */
@@ -484,6 +484,7 @@ table.lb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
   .banner b{font-size:22px;}
   .overlay{align-items:start;padding-top:calc(16px + env(safe-area-inset-top,0px));}
 }@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+.crown{width:1em;height:1em;vertical-align:-.12em;margin-left:.3em;flex:none;filter:drop-shadow(0 0 3px rgba(245,197,66,.45))}
 </style>
 
 <div class="app">
@@ -1174,6 +1175,7 @@ function distText(d,b){return d<1?"0 km":`${fmt(Math.round(d))} km away`;}
 
 /* ---------- Hints ---------- */
 const TIERS=["Far · any guess","Narrowing · within 3,000 km","Country · within 1,000 km","Close · within 300 km"];
+const capMark=c=>CAPITALS.has(c.name)?`<svg class="crown" viewBox="0 0 24 24" role="img" aria-label="capital"><title>Capital</title><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" fill="#f5c542" stroke="#a87b00" stroke-width="1.2" stroke-linejoin="round"/></svg>`:"";
 const CAPITALS=new Set(["Saint John's","Belmopan","Porto-Novo","Bandar Seri Begawan","Gitega","Yaoundé","Praia","Bangui","N'Djamena","Moroni","Nicosia","Roseau","Dili","Malabo","Palikir","Libreville","Saint George's","Conakry","Bissau","Yamoussoukro","Tarawa","Pristina","Maseru","Monrovia","Lilongwe","Majuro","Nouakchott","Rabat","Naypyidaw","Niamey","Ngerulmud","Basseterre","Castries","Kingstown","São Tomé","Honiara","Mogadishu","Bloemfontein","Banjul","Lomé","Nuku'alofa","Funafuti","Port Vila","Mbabane","Dodoma","Juba","Yaren","Vatican City","London","Paris","Berlin","Madrid","Rome","Vienna","Prague","Budapest","Warsaw","Amsterdam","Brussels","Lisbon","Dublin","Stockholm","Oslo","Copenhagen","Helsinki","Reykjavík","Athens","Moscow","Kyiv","Bucharest","Belgrade","Zagreb","Cairo","Nairobi","Addis Ababa","Dakar","Accra","Kinshasa","Tunis","Algiers","Khartoum","Antananarivo","Tokyo","Seoul","Beijing","Taipei","Bangkok","Hanoi","Singapore","Kuala Lumpur","Jakarta","Manila","Delhi","Kathmandu","Dhaka","Tehran","Riyadh","Baghdad","Tashkent","Ulaanbaatar","Canberra","Wellington","Washington","Ottawa","Mexico City","Havana","Panama City","Guatemala City","Brasília","Buenos Aires","Santiago","Lima","Bogotá","Quito","Caracas","La Paz","Sucre","Montevideo","Ljubljana","Sarajevo","Podgorica","Bratislava","Tirana","Sofia","Monaco","Valletta","Tallinn","Riga","Vilnius","Doha","Muscat","Amman","Beirut","Abu Dhabi","Baku","Tbilisi","Yerevan","Kabul","Thimphu","Islamabad","Malé","Phnom Penh","Vientiane","Abuja","Kampala","Kigali","Windhoek","Harare","Maputo","Port Louis","Luanda","San José","Kingston","Santo Domingo","Nassau","Asunción","Georgetown","Suva","Skopje","Chișinău","Minsk","Luxembourg","Andorra la Vella","San Marino","Vaduz","Bern","Tripoli","Bamako","Ouagadougou","Freetown","Brazzaville","Lusaka","Gaborone","Djibouti","Asmara","Victoria","Pyongyang","Manama","Kuwait City","Sana'a","Damascus","Dushanbe","Bishkek","Astana","Ashgabat","Port Moresby","Apia","Tegucigalpa","San Salvador","Managua","Port-au-Prince","Bridgetown","Port of Spain","Paramaribo","Pretoria","Cape Town","Ankara"]);
 const SUBCAPS=new Set(["Edinburgh","Cardiff","Belfast","Nuuk","Papeete","Nouméa","Hamilton","Cayenne","Saint-Denis","San Juan","Willemstad","Tórshavn","Gibraltar"]);
 // Encyclopedia-style themes, kept deliberately broad so they narrow things down without giving the place away.
@@ -1546,7 +1548,7 @@ function renderPanel(newHint){
     else if(t===2){dirTxt="You're within 1,000 km. No more arrows from here: use the clues.";}
     else if(t===1){rot=snap16(last.brg)*22.5;dirTxt=`Somewhere to the ${DIRS16[snap16(last.brg)]}`;}
     else{rot=snap8(last.brg)*45;dirTxt=`Very roughly ${DIRS[snap8(last.brg)]}. Get within 3,000 km for a sharper heading.`;}
-    res.innerHTML=`<div class="guessname">${S.race&&last.by!=null?esc(S.players[last.by].name)+": ":""}${last.city.name}, ${last.city.country}</div>
+    res.innerHTML=`<div class="guessname">${S.race&&last.by!=null?esc(S.players[last.by].name)+": ":""}${last.city.name}${capMark(last.city)}, ${last.city.country}</div>
       <div class="band" style="color:${last.band.color}">${last.d<1?"Found":last.band.label}</div>
       <div class="compass">${rot===null?`<span style="color:var(--faint);font-size:20px">${last.d<1?"★":"?"}</span>`:`<svg width="26" height="26" viewBox="0 0 26 26" style="transform:rotate(${rot}deg)"><path d="M13 2 L20 22 L13 17 L6 22 Z" fill="${last.band.hex}"/></svg>`}</div>
       <div class="dist">${last.d<1?"0 km":distText(last.d,last.band)}</div>
@@ -1578,10 +1580,10 @@ function renderPanel(newHint){
   const showOpp=opp&&histTab==="opp";
   $("hcap").hidden=!showOpp;
   if(showOpp){$("hcap").textContent=`How close ${opp.name} is getting to ${S.mode==="duo"?p.name+"'s":"your"} city.`;
-    $("hist").innerHTML=opp.guesses.length?opp.guesses.map((g,i)=>`<li><span class="n">${i+1}</span><span>${g.city.name}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).reverse().join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
+    $("hist").innerHTML=opp.guesses.length?opp.guesses.map((g,i)=>`<li><span class="n">${i+1}</span><span>${g.city.name}${capMark(g.city)}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).reverse().join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
     return;}
   $("histTitle").textContent=S.race?"Guesses on the board":"Your guesses";
-  $("hist").innerHTML=p.guesses.length?p.guesses.map((g,i)=>`<li><span class="n">${i+1}</span><span>${S.race&&g.by!=null?`<i class="whodot" style="background:${pColor(g.by)}" title="${esc(S.players[g.by].name)}"></i>`:""}${g.city.name}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).reverse().join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
+  $("hist").innerHTML=p.guesses.length?p.guesses.map((g,i)=>`<li><span class="n">${i+1}</span><span>${S.race&&g.by!=null?`<i class="whodot" style="background:${pColor(g.by)}" title="${esc(S.players[g.by].name)}"></i>`:""}${g.city.name}${capMark(g.city)}</span><span class="chip" style="background:${g.band.hex}">${g.d<1?"Found":fmt(Math.round(g.d))+" km"}</span></li>`).reverse().join(""):`<li><span></span><span style="color:var(--faint)">No guesses yet</span><span></span></li>`;
 }
 
 function doGuess(){
