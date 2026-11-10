@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-window.HC_VERSION="2026-11-10 11:45";
+window.HC_VERSION="2026-11-10 11:58";
 /* Hidden City: shared storage on Firebase Realtime Database.
    Gives the game the same small storage interface it uses inside Claude.
    Each device signs in anonymously, so the database rules can tell players apart. */
@@ -1487,7 +1487,8 @@ function attachSuggest(input,box,onPick,down,filter){
 /* ---------- Panel ---------- */
 const $=id=>document.getElementById(id);
 const gInput=$("guess");
-attachSuggest(gInput,$("gsugg"),(c,enter)=>{if(enter)doGuess();});
+const guessDiff=()=>(S&&S.settings&&S.settings.diff)||"normal";
+attachSuggest(gInput,$("gsugg"),(c,enter)=>{if(enter)doGuess();},false,c=>inPool(c,guessDiff()));
 $("guessBtn").addEventListener("click",doGuess);
 $("passBtn").addEventListener("click",()=>{if(S.phase==="over"){if(S.mode==="daily")return Daily.results(false);showEnd();}});
 $("swnow").addEventListener("click",()=>switchTurn());
@@ -1587,6 +1588,7 @@ function doGuess(){
   if(gInput.disabled)return;
   const msg=$("gmsg");const c=findCity(gInput.value);
   if(!c){msg.textContent=gInput.value.trim()?"That city isn't on the board. Pick one from the suggestions.":"Type a city first.";msg.className="msg err";return;}
+  if(!inPool(c,guessDiff())){const dn=DIFFS[guessDiff()].name;msg.textContent=guessDiff()==="easy"?`${c.name} isn't a capital. On ${dn} you can only guess capitals.`:`${c.name} isn't one of the ${dn} cities. Pick one from the suggestions.`;msg.className="msg err";return;}
   const p=seeker();
   if(p.guesses.some(g=>g.city.id===c.id)){msg.textContent=`You already guessed ${c.name}.`;msg.className="msg err";return;}
   if(S.mode==="online")return Online.guess(c);

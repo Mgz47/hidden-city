@@ -1,5 +1,5 @@
 /* Hidden City service worker: offline play and fast start */
-const VERSION = "hc-20261110114538";
+const VERSION = "hc-20261110115802";
 const SHELL = ["./", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png", "./icons/favicon-64.png"];
 const LIBS = ["cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com", "www.gstatic.com"];
 self.addEventListener("install", e => {
